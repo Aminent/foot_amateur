@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "414861441723",
+    "project_id": "foot-amateur-d14ee",
+    "storage_bucket": "foot-amateur-d14ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:414861441723:android:4c12dd3c60e5ae08b6879e",
+        "android_client_info": {
+          "package_name": "com.example.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzCYANpd9NPKb44oMYyJrozgoft1WJ9nM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

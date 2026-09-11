@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+build/
+dist/
+.next/
+out/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+foot_amateur.iml
+
+# Flutter/Dart
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/pubspec.lock
+
+# Snapshots
+.snapshots/
+
+# Coverage
+coverage/
+
+# Misc docs (generated)
+CHAT_FUNCTIONALITY_SUMMARY.md
+COMPLETE_CHECKLIST.md
+DESIGN_SUMMARY.md
+DOCUMENTATION_INDEX.md
+EXTERNAL_ACCESS_SETUP.md
+FILE_MANIFEST.md
+FINAL_REPORT.md
+FLUTTER_DESIGN_COMPLETE.md
+GROUP_CHAT_IMPLEMENTATION.md
+INSTALLATION.md
+PASSWORD_FIELD_ADDED.md
+RAPPORT_FONCTIONNALITES.md
+START_HERE.md
+UI_IMPROVEMENTS.md
+VISUAL_GUIDE.md
+VISUAL_WIREFRAMES.md
+NETWORK_CONFIG.md
+IMPLEMENTATION_SUMMARY.md
