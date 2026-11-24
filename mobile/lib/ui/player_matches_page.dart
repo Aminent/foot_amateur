@@ -1,9 +1,11 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../state/auth_controller.dart';
 import '../services/player_service.dart';
 import '../services/api_client.dart';
 import '../widgets/custom_widgets.dart';
+import '../widgets/home_design.dart';
 import 'match_detail_page.dart';
 
 class PlayerMatchesPage extends StatefulWidget {
@@ -27,21 +29,24 @@ class _PlayerMatchesPageState extends State<PlayerMatchesPage> {
     _matchesFuture = _playerService.getMyMatches();
   }
 
-  void _reload() {
+  Future<void> _reload() async {
     setState(() {
       _matchesFuture = _playerService.getMyMatches();
     });
+    await _matchesFuture.catchError((_) => <String, dynamic>{});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: HomePalette.background,
       appBar: AppBar(
-        title: const Text('Mes matchs'),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        surfaceTintColor: const Color(0xFFDCE8F8),
+        scrolledUnderElevation: 2,
+        foregroundColor: HomePalette.title,
         elevation: 0,
+        title: const Text('Mes matchs', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20, color: HomePalette.title)),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _matchesFuture,
@@ -49,12 +54,8 @@ class _PlayerMatchesPageState extends State<PlayerMatchesPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
-            return AppErrorWidget(
-              message: snapshot.error.toString(),
-              onRetry: _reload,
-            );
+            return AppErrorWidget(message: snapshot.error.toString(), onRetry: _reload);
           }
 
           final data = snapshot.data!;
@@ -64,56 +65,37 @@ class _PlayerMatchesPageState extends State<PlayerMatchesPage> {
           final standings = data['standings'] as List? ?? [];
           final myPosition = data['myPosition'] as int?;
 
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          return RefreshIndicator(
+            onRefresh: _reload,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
               children: [
-                // ── Tournament Banner ────────────────────────────────────────
-                if (tournament != null)
-                  _TournamentBanner(
+                if (tournament != null) ...[
+                  const SizedBox(height: 8),
+                  const HomeSectionHeader('Tournoi', Icons.emoji_events),
+                  const SizedBox(height: 12),
+                  _TournamentCard(
                     tournament: tournament,
                     myPosition: myPosition,
                     standings: standings,
                     expanded: _standingsExpanded,
-                    onToggle: () =>
-                        setState(() => _standingsExpanded = !_standingsExpanded),
+                    onToggle: () => setState(() => _standingsExpanded = !_standingsExpanded),
                   ),
-
-                const SizedBox(height: 16),
-
-                // ── Upcoming ─────────────────────────────────────────────────
-                _SectionHeader(
-                  label: 'À VENIR',
-                  count: upcoming.length,
-                  color: const Color(0xFF10B981),
-                ),
-                const SizedBox(height: 8),
+                ],
+                const SizedBox(height: 26),
+                const HomeSectionHeader('Prochains matchs', Icons.event),
+                const SizedBox(height: 12),
                 if (upcoming.isEmpty)
-                  _EmptySlot(
-                    icon: Icons.event_available,
-                    message: 'Aucun match à venir',
-                  )
+                  const _EmptySlot(icon: Icons.event_available, message: 'Aucun match à venir')
                 else
-                  ...upcoming.map((m) => _UpcomingCard(match: m, auth: widget.auth)),
-
-                const SizedBox(height: 24),
-
-                // ── Recent ───────────────────────────────────────────────────
-                _SectionHeader(
-                  label: 'HISTORIQUE',
-                  count: recent.length,
-                  color: const Color(0xFF64748B),
-                ),
-                const SizedBox(height: 8),
+                  ...upcoming.map((m) => _UpcomingCard(match: m as Map<String, dynamic>, auth: widget.auth)),
+                const SizedBox(height: 26),
+                const HomeSectionHeader('Historique', Icons.history),
+                const SizedBox(height: 12),
                 if (recent.isEmpty)
-                  _EmptySlot(
-                    icon: Icons.history,
-                    message: 'Aucun match joué',
-                  )
+                  const _EmptySlot(icon: Icons.history, message: 'Aucun match joué')
                 else
-                  ...recent.map((m) => _RecentCard(match: m, auth: widget.auth)),
-
-                const SizedBox(height: 32),
+                  ...recent.map((m) => _RecentCard(match: m as Map<String, dynamic>, auth: widget.auth)),
               ],
             ),
           );
@@ -124,17 +106,17 @@ class _PlayerMatchesPageState extends State<PlayerMatchesPage> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tournament Banner + collapsible standings
+// Carte tournoi + classement repliable
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TournamentBanner extends StatelessWidget {
+class _TournamentCard extends StatelessWidget {
   final Map<String, dynamic> tournament;
   final int? myPosition;
   final List standings;
   final bool expanded;
   final VoidCallback onToggle;
 
-  const _TournamentBanner({
+  const _TournamentCard({
     required this.tournament,
     required this.myPosition,
     required this.standings,
@@ -151,118 +133,75 @@ class _TournamentBanner extends StatelessWidget {
         : format == 'knockout'
             ? 'Élimination directe'
             : format;
+    final canExpand = standings.isNotEmpty && format == 'league';
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E3A5F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: diagonal(HomePalette.navy),
+        boxShadow: [BoxShadow(color: HomePalette.navy.last.withOpacity(0.35), blurRadius: 14, offset: const Offset(0, 6))],
       ),
-      child: Column(
-        children: [
-          // Header row
+      clipBehavior: Clip.antiAlias,
+      child: Stack(children: [
+        Positioned(
+          right: -30,
+          top: -30,
+          child: Container(width: 120, height: 120, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.08))),
+        ),
+        Column(children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            child: Row(children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.14), borderRadius: BorderRadius.circular(16)),
+                child: const Icon(Icons.emoji_events, color: Color(0xFFFBBF24), size: 32),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+                  if (formatLabel.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(formatLabel, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12.5)),
+                  ],
+                ]),
+              ),
+              if (myPosition != null)
                 Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.emoji_events,
-                      color: Color(0xFFFBBF24), size: 28),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(gradient: diagonal(HomePalette.orange), borderRadius: BorderRadius.circular(20)),
+                  child: Text(myPosition == 1 ? '1ère place' : '${myPosition}ème place',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold)),
-                      if (formatLabel.isNotEmpty)
-                        Text(formatLabel,
-                            style: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
-                                fontSize: 12)),
-                    ],
-                  ),
-                ),
-                if (myPosition != null)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _positionColor(myPosition!),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${_ordinal(myPosition!)} place',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12),
-                    ),
-                  ),
-              ],
-            ),
+            ]),
           ),
-
-          // Standings toggle (only for league)
-          if (standings.isNotEmpty && format == 'league')
+          if (canExpand)
             InkWell(
               onTap: onToggle,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  border: Border(
-                      top: BorderSide(
-                          color: Colors.white.withOpacity(0.1))),
+                  color: Colors.white.withOpacity(0.06),
+                  border: Border(top: BorderSide(color: Colors.white.withOpacity(0.12))),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.table_chart,
-                        color: Colors.white70, size: 16),
-                    const SizedBox(width: 8),
-                    const Text('Classement',
-                        style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    const Spacer(),
-                    Icon(
-                        expanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: Colors.white70,
-                        size: 20),
-                  ],
-                ),
+                child: Row(children: [
+                  const Icon(Icons.table_chart_outlined, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  const Text('Classement', style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.white, size: 22),
+                ]),
               ),
             ),
-
-          if (expanded && standings.isNotEmpty && format == 'league')
-            _MiniStandings(standings: standings),
-        ],
-      ),
+          if (expanded && canExpand) _MiniStandings(standings: standings),
+        ]),
+      ]),
     );
-  }
-
-  Color _positionColor(int pos) {
-    if (pos == 1) return const Color(0xFFF59E0B);
-    if (pos == 2) return const Color(0xFF6B7280);
-    if (pos == 3) return const Color(0xFFB45309);
-    return const Color(0xFF3B82F6);
-  }
-
-  String _ordinal(int n) {
-    if (n == 1) return '1ère';
-    return '${n}ème';
   }
 }
 
@@ -273,69 +212,63 @@ class _MiniStandings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF0F172A),
-      child: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Row(
-              children: const [
-                SizedBox(width: 28),
-                SizedBox(width: 8),
-                Expanded(
-                    child: Text('Équipe',
-                        style: TextStyle(color: Colors.white54, fontSize: 11))),
-                _StdHdr('J'),
-                _StdHdr('V'),
-                _StdHdr('N'),
-                _StdHdr('D'),
-                _StdHdr('DB'),
-                _StdHdr('Pts'),
-              ],
-            ),
-          ),
-          const Divider(color: Colors.white12, height: 1),
-          ...standings.take(6).toList().asMap().entries.map((e) {
-            final idx = e.key;
-            final s = e.value as Map<String, dynamic>;
-            final isMe = s['isMyTeam'] == true;
-            return Container(
-              color: isMe
-                  ? const Color(0xFF3B82F6).withOpacity(0.2)
-                  : idx.isEven
-                      ? Colors.transparent
-                      : Colors.white.withOpacity(0.02),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-              child: Row(
-                children: [
-                  _PosBadge(pos: idx + 1),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      s['teamName'] as String? ?? '',
-                      style: TextStyle(
-                        color: isMe ? Colors.white : Colors.white70,
-                        fontWeight:
-                            isMe ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  _StdCell('${s['played'] ?? 0}'),
-                  _StdCell('${s['won'] ?? 0}'),
-                  _StdCell('${s['drawn'] ?? 0}'),
-                  _StdCell('${s['lost'] ?? 0}'),
-                  _StdCell('${(s['goalDiff'] ?? 0) >= 0 ? '+' : ''}${s['goalDiff'] ?? 0}'),
-                  _StdCell('${s['points'] ?? 0}', bold: true, highlight: isMe),
-                ],
+      color: Colors.white,
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(children: const [
+            SizedBox(width: 30),
+            Expanded(child: Text('Équipe', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w600))),
+            _StdHdr('J'),
+            _StdHdr('V'),
+            _StdHdr('N'),
+            _StdHdr('D'),
+            _StdHdr('DB'),
+            _StdHdr('Pts'),
+          ]),
+        ),
+        const Divider(color: Color(0xFFE2E8F0), height: 1),
+        ...standings.take(6).toList().asMap().entries.map((e) {
+          final idx = e.key;
+          final s = e.value as Map<String, dynamic>;
+          final isMe = s['isMyTeam'] == true;
+          final gd = _toInt(s['goalDiff']);
+          return Container(
+            color: isMe ? const Color(0xFFE0F2FE) : Colors.transparent,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(children: [
+              GradientSquare(
+                size: 22,
+                colors: idx == 0
+                    ? HomePalette.orange
+                    : idx < 3
+                        ? HomePalette.navy
+                        : const [Color(0xFF94A3B8), Color(0xFFCBD5E1)],
+                child: Text('${idx + 1}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
               ),
-            );
-          }),
-          const SizedBox(height: 8),
-        ],
-      ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  s['teamName'] as String? ?? '',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: HomePalette.title,
+                    fontWeight: isMe ? FontWeight.w800 : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              _StdCell('${s['played'] ?? 0}'),
+              _StdCell('${s['won'] ?? 0}'),
+              _StdCell('${s['drawn'] ?? 0}'),
+              _StdCell('${s['lost'] ?? 0}'),
+              _StdCell('${gd >= 0 ? '+' : ''}$gd'),
+              _StdCell('${s['points'] ?? 0}', bold: true),
+            ]),
+          );
+        }),
+        const SizedBox(height: 6),
+      ]),
     );
   }
 }
@@ -348,14 +281,13 @@ class _StdHdr extends StatelessWidget {
       width: 30,
       child: Text(text,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white38, fontSize: 11)));
+          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w600)));
 }
 
 class _StdCell extends StatelessWidget {
   final String text;
   final bool bold;
-  final bool highlight;
-  const _StdCell(this.text, {this.bold = false, this.highlight = false});
+  const _StdCell(this.text, {this.bold = false});
   @override
   Widget build(BuildContext context) => SizedBox(
         width: 30,
@@ -363,79 +295,42 @@ class _StdCell extends StatelessWidget {
           text,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: highlight ? const Color(0xFF93C5FD) : Colors.white60,
-            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            color: bold ? HomePalette.link : const Color(0xFF475569),
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
             fontSize: 12,
           ),
         ),
       );
 }
 
-class _PosBadge extends StatelessWidget {
-  final int pos;
-  const _PosBadge({required this.pos});
-
-  Color get _color {
-    if (pos == 1) return const Color(0xFFF59E0B);
-    if (pos == 2) return const Color(0xFF9CA3AF);
-    if (pos == 3) return const Color(0xFFB45309);
-    return const Color(0xFF475569);
-  }
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(color: _color, shape: BoxShape.circle),
-        child: Center(
-          child: Text('$pos',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold)),
-        ),
-      );
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Section header
+// Cartes match
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SectionHeader extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-  const _SectionHeader(
-      {required this.label, required this.count, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(label,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.bold, fontSize: 11)),
-          ),
-          const Spacer(),
-          Text('$count match${count > 1 ? 's' : ''}',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-        ],
-      ),
+BoxDecoration get _whiteCard => BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 3))],
     );
-  }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Upcoming match card
-// ─────────────────────────────────────────────────────────────────────────────
+void _openDetail(BuildContext context, AuthController auth, Map<String, dynamic> match) {
+  final matchId = match['id'] as int?;
+  if (matchId == null) return;
+  final opponent = _opponentName(match['opponent']);
+  final isHome = match['myTeamIsHome'] as bool? ?? true;
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => MatchDetailPage(
+        auth: auth,
+        matchId: matchId,
+        homeTeam: isHome ? 'Mon équipe' : opponent,
+        awayTeam: isHome ? opponent : 'Mon équipe',
+        myTeamIsHome: isHome,
+      ),
+    ),
+  );
+}
 
 class _UpcomingCard extends StatelessWidget {
   final Map<String, dynamic> match;
@@ -444,126 +339,87 @@ class _UpcomingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matchId  = match['id'] as int?;
     final opponent = _opponentName(match['opponent']);
-    final isHome   = match['myTeamIsHome'] as bool? ?? true;
-    final round    = match['round'];
+    final isHome = match['myTeamIsHome'] as bool? ?? true;
+    final round = match['round'];
     final location = match['location'] as String?;
-    final dateStr  = match['date'] as String?;
-    final formatted = _fmtDate(dateStr);
+    final date = DateTime.tryParse(match['date'] as String? ?? '')?.toLocal();
+    final daysLeft = date == null ? null : DateTime(date.year, date.month, date.day).difference(DateUtils.dateOnly(DateTime.now())).inDays;
 
-    return GestureDetector(
-      onTap: matchId == null ? null : () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => MatchDetailPage(
-          auth: auth, matchId: matchId,
-          homeTeam: isHome ? 'Mon équipe' : opponent,
-          awayTeam: isHome ? opponent : 'Mon équipe',
-          myTeamIsHome: isHome,
-        ),
-      )),
-      child: Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
-        ],
-      ),
-      child: Column(
-        children: [
-          // top stripe
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: () => _openDetail(context, auth, match),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: _whiteCard,
+          child: Row(children: [
+            GradientSquare(
+              size: 54,
+              colors: HomePalette.orange,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(date == null ? '--' : date.day.toString().padLeft(2, '0'),
+                    style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800, height: 1)),
+                const SizedBox(height: 2),
+                Text(date == null ? '' : _months[date.month - 1],
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+              ]),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // badges row
-                Row(
-                  children: [
-                    _Pill('À VENIR', const Color(0xFF10B981)),
-                    const SizedBox(width: 6),
-                    _Pill(isHome ? '🏠 Domicile' : '✈️ Extérieur',
-                        const Color(0xFF6366F1)),
-                    if (round != null) ...[
-                      const SizedBox(width: 6),
-                      _Pill('J$round', const Color(0xFF64748B)),
-                    ],
-                    const Spacer(),
-                    Text(formatted,
-                        style: TextStyle(
-                            color: Colors.grey.shade500, fontSize: 11)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // teams row
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.sports_soccer,
-                          color: Color(0xFF6366F1), size: 22),
-                    ),
-                    const SizedBox(width: 12),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('vs $opponent',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5, color: HomePalette.title)),
+                const SizedBox(height: 6),
+                Wrap(spacing: 6, runSpacing: 4, children: [
+                  _Pill(isHome ? 'Domicile' : 'Extérieur', isHome ? HomePalette.navy : HomePalette.purple),
+                  if (round != null) _Pill('J$round', HomePalette.sky),
+                  if (date != null)
+                    _Pill('${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}', const [Color(0xFF64748B), Color(0xFF94A3B8)]),
+                ]),
+                if (location != null && location.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Icon(Icons.location_on_outlined, size: 14, color: Colors.grey[500]),
+                    const SizedBox(width: 3),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isHome
-                                ? 'Mon équipe vs $opponent'
-                                : '$opponent vs Mon équipe',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                          if (location != null && location.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 3),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.location_on,
-                                      size: 12,
-                                      color: Colors.grey.shade400),
-                                  const SizedBox(width: 3),
-                                  Text(location,
-                                      style: TextStyle(
-                                          color: Colors.grey.shade500,
-                                          fontSize: 12)),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
+                      child: Text(location,
+                          maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                     ),
-                  ],
-                ),
-              ],
+                  ]),
+                ],
+              ]),
             ),
-          ),
-        ],
+            if (daysLeft != null && daysLeft >= 0)
+              Column(children: [
+                Text(daysLeft == 0 ? "Auj." : 'J-$daysLeft',
+                    style: const TextStyle(color: HomePalette.link, fontWeight: FontWeight.w800, fontSize: 14)),
+                Icon(Icons.chevron_right, color: Colors.grey[400]),
+              ]),
+          ]),
+        ),
       ),
-    ), // Container
-    ); // GestureDetector
+    );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Recent match card
-// ─────────────────────────────────────────────────────────────────────────────
+class _Result {
+  final String letter;
+  final String label;
+  final List<Color> colors;
+  const _Result(this.letter, this.label, this.colors);
+
+  static _Result of(Map<String, dynamic> m) {
+    final gf = _toInt(m['goalsFor'] ?? m['homeTeamScore']);
+    final ga = _toInt(m['goalsAgainst'] ?? m['awayTeamScore']);
+    final r = m['result'] as String?;
+    if (r == 'V' || (r == null && gf > ga)) return const _Result('V', 'Victoire', HomePalette.green);
+    if (r == 'N' || (r == null && gf == ga)) return const _Result('N', 'Nul', HomePalette.orange);
+    return const _Result('D', 'Défaite', HomePalette.red);
+  }
+}
 
 class _RecentCard extends StatelessWidget {
   final Map<String, dynamic> match;
@@ -572,150 +428,52 @@ class _RecentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matchId  = match['id'] as int?;
     final opponent = _opponentName(match['opponent']);
-    final isHome   = match['myTeamIsHome'] as bool? ?? true;
-    final gf = match['goalsFor'] ?? match['homeTeamScore'] ?? 0;
-    final ga = match['goalsAgainst'] ?? match['awayTeamScore'] ?? 0;
-    final result = match['result'] as String?;
+    final isHome = match['myTeamIsHome'] as bool? ?? true;
+    final gf = _toInt(match['goalsFor'] ?? match['homeTeamScore']);
+    final ga = _toInt(match['goalsAgainst'] ?? match['awayTeamScore']);
     final round = match['round'];
-    final dateStr = match['date'] as String?;
+    final res = _Result.of(match);
 
-    // Determine result if not pre-computed
-    final String resultLabel;
-    final Color resultColor;
-    final IconData resultIcon;
-
-    if (result == 'V' || (result == null && gf > ga)) {
-      resultLabel = 'Victoire';
-      resultColor = const Color(0xFF10B981);
-      resultIcon = Icons.emoji_events;
-    } else if (result == 'N' || (result == null && gf == ga)) {
-      resultLabel = 'Nul';
-      resultColor = const Color(0xFFF59E0B);
-      resultIcon = Icons.handshake;
-    } else {
-      resultLabel = 'Défaite';
-      resultColor = const Color(0xFFEF4444);
-      resultIcon = Icons.close;
-    }
-
-    return GestureDetector(
-      onTap: matchId == null ? null : () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => MatchDetailPage(
-          auth: auth, matchId: matchId,
-          homeTeam: isHome ? 'Mon équipe' : opponent,
-          awayTeam: isHome ? opponent : 'Mon équipe',
-          myTeamIsHome: isHome,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: () => _openDetail(context, auth, match),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: _whiteCard,
+          child: Row(children: [
+            GradientSquare(
+              size: 48,
+              colors: res.colors,
+              child: Text(res.letter, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('vs $opponent',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: HomePalette.title)),
+                const SizedBox(height: 4),
+                Text(
+                  [_fmtDate(match['date'] as String?), if (round != null) 'J$round', isHome ? 'Domicile' : 'Extérieur'].join('  ·  '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ]),
+            ),
+            const SizedBox(width: 10),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('$gf - $ga', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 21, color: res.colors.first)),
+              const SizedBox(height: 3),
+              _Pill(res.label, res.colors),
+            ]),
+          ]),
         ),
-      )),
-      child: Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
-        ],
       ),
-      child: Column(
-        children: [
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: resultColor,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(14)),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                // result icon
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: resultColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(resultIcon, color: resultColor, size: 22),
-                ),
-                const SizedBox(width: 12),
-                // match info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isHome
-                            ? 'Mon équipe vs $opponent'
-                            : '$opponent vs Mon équipe',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Text(_fmtDate(dateStr),
-                              style: TextStyle(
-                                  color: Colors.grey.shade500, fontSize: 11)),
-                          if (round != null) ...[
-                            Text('  ·  ',
-                                style: TextStyle(
-                                    color: Colors.grey.shade400,
-                                    fontSize: 11)),
-                            Text('J$round',
-                                style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 11)),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // score + result
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '$gf – $ga',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                          color: resultColor),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: resultColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        resultLabel,
-                        style: TextStyle(
-                            color: resultColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ), // Container
-    ); // GestureDetector
+    );
   }
 }
 
@@ -731,57 +489,49 @@ class _EmptySlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 32, color: Colors.grey.shade300),
-          const SizedBox(width: 12),
-          Text(message,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
+      decoration: _whiteCard,
+      child: Column(children: [
+        SizedBox(height: 90, child: Lottie.asset('assets/empty_state.json', fit: BoxFit.contain)),
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, size: 18, color: Colors.grey[400]),
+          const SizedBox(width: 8),
+          Text(message, style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w500)),
+        ]),
+      ]),
     );
   }
 }
 
 class _Pill extends StatelessWidget {
   final String text;
-  final Color color;
-  const _Pill(this.text, this.color);
+  final List<Color> colors;
+  const _Pill(this.text, this.colors);
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(text,
-            style: TextStyle(
-                color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+        decoration: BoxDecoration(gradient: diagonal(colors), borderRadius: BorderRadius.circular(20)),
+        child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
       );
 }
 
-/// Safely extracts the opponent name whether the backend sent a String or a {id,name} Map.
+const _months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+int _toInt(dynamic v) => v is int ? v : (v is num ? v.toInt() : int.tryParse('$v') ?? 0);
+
+/// Extrait le nom de l'adversaire, que le backend envoie une String ou un {id,name}.
 String _opponentName(dynamic raw) {
   if (raw == null) return 'Adversaire';
   if (raw is String) return raw.isNotEmpty ? raw : 'Adversaire';
   if (raw is Map) return (raw['name'] as String?)?.isNotEmpty == true ? raw['name'] as String : 'Adversaire';
   return 'Adversaire';
 }
+
 String _fmtDate(String? raw) {
   if (raw == null || raw.isEmpty) return 'Date inconnue';
-  try {
-    final d = DateTime.parse(raw);
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}'
-        ' ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-  } catch (_) {
-    return raw;
-  }
+  final d = DateTime.tryParse(raw)?.toLocal();
+  if (d == null) return raw;
+  return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 }

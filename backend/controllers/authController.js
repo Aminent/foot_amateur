@@ -29,7 +29,7 @@ const register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'joueur',
+      role: role === 'coach' ? 'coach' : 'joueur', // jamais 'admin' via l'inscription publique
       phone,
       dateOfBirth
     });

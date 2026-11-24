@@ -1,12 +1,11 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 import '../state/auth_controller.dart';
-import '../theme/app_theme.dart';
 import '../services/coach_service.dart';
 import '../services/notification_prefs_service.dart';
 import '../services/api_client.dart';
 import '../widgets/custom_widgets.dart';
+import '../widgets/home_design.dart';
 import 'coach_settings_page.dart';
 import 'coach_stats_page.dart';
 import 'main_navigation_wrapper.dart';
@@ -71,325 +70,116 @@ class _CoachHomePageState extends State<CoachHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text('Tableau de bord',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20)),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: _openSettings,
-              ),
-              if (_notifCount > 0)
-                Positioned(
-                  right: 6, top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      _notifCount > 99 ? '99+' : '$_notifCount',
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: _openSettings,
-          ),
-        ],
-      ),
+      backgroundColor: HomePalette.background,
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        color: const Color(0xFF55C1CF),
+        color: HomePalette.link,
         child: FutureBuilder<_DashboardData>(
           future: _dashFuture,
           builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF55C1CF)),
-              );
-            }
-            if (snap.hasError) {
-              return AppErrorWidget(
-                message: snap.error.toString(),
-                onRetry: _refreshData,
-              );
-            }
-
             final data = snap.data;
             final stats = data?.stats ?? {'teamsCount': 0, 'playersCount': 0, 'matchesCount': 0, 'upcomingMatches': 0};
             final players = List<Map<String, dynamic>>.from(data?.teamData['players'] ?? []);
             final teamName = (data?.teamData['team'] as Map<String, dynamic>?)?['name'] ?? '';
-            final upcomingTrainings = (data?.trainings ?? [])
-                .where((t) => t['statusRaw'] == 'scheduled')
-                .toList();
-
-            // Next scheduled match (soonest future date)
-            final scheduledMatches = (data?.matches ?? [])
-                .where((m) => m['status'] == 'scheduled')
-                .toList()
-              ..sort((a, b) {
-                final da = DateTime.tryParse(a['date'] ?? '') ?? DateTime(9999);
-                final db = DateTime.tryParse(b['date'] ?? '') ?? DateTime(9999);
-                return da.compareTo(db);
-              });
+            final upcomingTrainings = (data?.trainings ?? []).where((t) => t['statusRaw'] == 'scheduled').toList();
+            final scheduledMatches = (data?.matches ?? []).where((m) => m['status'] == 'scheduled').toList()
+              ..sort((a, b) => (DateTime.tryParse(a['date'] ?? '') ?? DateTime(9999))
+                  .compareTo(DateTime.tryParse(b['date'] ?? '') ?? DateTime(9999)));
             final nextMatch = scheduledMatches.isNotEmpty ? scheduledMatches.first : null;
+            final loading = snap.connectionState == ConnectionState.waiting;
 
-            return SingleChildScrollView(
+            return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Hero header ───────────────────────────────────────────
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF0F172A), Color(0xFF1E3A5F)],
-                      ),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Bonjour,',
-                                style: TextStyle(color: Colors.white.withAlpha(160), fontSize: 14),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.auth.user?.name ?? 'Coach',
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
-                              ),
-                              if (teamName.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.shield, color: Color(0xFF55C1CF), size: 14),
-                                    const SizedBox(width: 5),
-                                    Text(teamName,
-                                        style: const TextStyle(
-                                            color: Color(0xFF55C1CF),
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600)),
-                                  ],
-                                ),
-                              ],
-                              const SizedBox(height: 8),
-                              Text(
-                                'Voici votre vue d\'ensemble',
-                                style: TextStyle(color: Colors.white.withAlpha(120), fontSize: 12),
-                              ),
-                            ],
+              slivers: [
+                HomeSliverHeader(
+                  initials: initialsOf(widget.auth.user?.name),
+                  avatarColors: HomePalette.orange,
+                  name: widget.auth.user?.name ?? 'Coach',
+                  chips: [
+                    HeaderChip('Coach',
+                        fill: const Color(0xFFF5B921).withOpacity(0.15),
+                        border: const Color(0xFFF5B921).withOpacity(0.6),
+                        textColor: const Color(0xFFF5B921)),
+                  ],
+                  club: teamName,
+                  notifCount: _notifCount,
+                  onBell: _openSettings,
+                  onSettings: _openSettings,
+                ),
+                if (loading)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: CircularProgressIndicator(color: HomePalette.link)),
+                  )
+                else if (snap.hasError)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: AppErrorWidget(message: snap.error.toString(), onRetry: _refreshData),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 44, 16, 32),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          physics: const NeverScrollableScrollPhysics(),
+                          childAspectRatio: 1.55,
+                          children: [
+                            GradientStatCard(value: '${stats['teamsCount']}', label: 'Équipe', icon: Icons.shield,
+                                colors: HomePalette.navy, lottie: 'assets/Football_team_players.json', onTap: () => _goToTab(1)),
+                            GradientStatCard(value: '${stats['playersCount']}', label: 'Joueurs', icon: Icons.people,
+                                colors: HomePalette.purple, lottie: 'assets/Soccer_player_kick_on_the_ball.json', onTap: () => _goToTab(1)),
+                            GradientStatCard(value: '${stats['matchesCount']}', label: 'Matchs', icon: Icons.sports_soccer,
+                                colors: HomePalette.green, lottie: 'assets/socccerfield.json', onTap: () => _goToTab(3)),
+                            GradientStatCard(value: '${stats['upcomingMatches']}', label: 'À venir', icon: Icons.calendar_today_outlined,
+                                colors: HomePalette.orange, lottie: 'assets/Coming_Soon.json', onTap: () => _goToTab(3)),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        const HomeSectionHeader('Accès rapide', Icons.bolt),
+                        const SizedBox(height: 14),
+                        Row(children: [
+                          QuickTile(icon: Icons.people, label: 'Équipe', colors: HomePalette.navy, onTap: () => _goToTab(1)),
+                          const SizedBox(width: 10),
+                          QuickTile(icon: Icons.fitness_center, label: 'Entraîn.', colors: HomePalette.purple, onTap: () => _goToTab(2)),
+                          const SizedBox(width: 10),
+                          QuickTile(icon: Icons.emoji_events, label: 'Tournois', colors: HomePalette.green, onTap: () => _goToTab(3)),
+                          const SizedBox(width: 10),
+                          QuickTile(
+                            icon: Icons.bar_chart,
+                            label: 'Stats',
+                            colors: HomePalette.orange,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoachStatsPage(auth: widget.auth))),
                           ),
-                        ),
-                        SizedBox(
-                          width: 90,
-                          height: 90,
-                          child: Lottie.asset('assets/hello.json'),
-                        ),
-                      ],
+                        ]),
+                        const SizedBox(height: 26),
+                        HomeSectionHeader('Prochain match', Icons.sports_soccer, onSeeAll: () => _goToTab(3)),
+                        const SizedBox(height: 12),
+                        nextMatch == null
+                            ? _emptyCard(icon: Icons.sports_soccer, message: 'Aucun match programmé', actionLabel: 'Voir les tournois', onAction: () => _goToTab(3))
+                            : _nextMatchCard(nextMatch),
+                        const SizedBox(height: 26),
+                        HomeSectionHeader('Prochaines séances', Icons.fitness_center, onSeeAll: () => _goToTab(2)),
+                        const SizedBox(height: 12),
+                        if (upcomingTrainings.isEmpty)
+                          _emptyCard(icon: Icons.fitness_center, message: 'Aucune séance planifiée', actionLabel: 'Créer une séance', onAction: () => _goToTab(2))
+                        else
+                          ...upcomingTrainings.take(3).map((t) => Padding(padding: const EdgeInsets.only(bottom: 10), child: _trainingRow(t))),
+                        const SizedBox(height: 26),
+                        HomeSectionHeader('Effectif', Icons.people, onSeeAll: () => _goToTab(1)),
+                        const SizedBox(height: 12),
+                        players.isEmpty
+                            ? _emptyCard(icon: Icons.group_off, message: 'Aucun joueur dans l\'équipe')
+                            : _squadSnapshot(players),
+                      ]),
                     ),
                   ),
-
-                  // ── Stat cards ────────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                    child: snap.connectionState == ConnectionState.waiting
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(color: Color(0xFF55C1CF)),
-                            ),
-                          )
-                        : GridView.count(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            childAspectRatio: 1.55,
-                            children: [
-                              _statCard(
-                                label: 'Équipe',
-                                value: stats['teamsCount'].toString(),
-                                icon: Icons.shield,
-                                color: const Color(0xFF55C1CF),
-                                lottie: 'assets/Football_team_players.json',
-                                onTap: () => _goToTab(1),
-                              ),
-                              _statCard(
-                                label: 'Joueurs',
-                                value: stats['playersCount'].toString(),
-                                icon: Icons.people,
-                                color: const Color(0xFF8B5CF6),
-                                lottie: 'assets/Soccer_player_kick_on_the_ball.json',
-                                onTap: () => _goToTab(1),
-                              ),
-                              _statCard(
-                                label: 'Matchs',
-                                value: stats['matchesCount'].toString(),
-                                icon: Icons.sports_soccer,
-                                color: const Color(0xFF10B981),
-                                lottie: 'assets/socccerfield.json',
-                                onTap: () => _goToTab(3),
-                              ),
-                              _statCard(
-                                label: 'À venir',
-                                value: stats['upcomingMatches'].toString(),
-                                icon: Icons.calendar_today,
-                                color: const Color(0xFFF59E0B),
-                                lottie: 'assets/Coming_Soon.json',
-                                onTap: () => _goToTab(3),
-                              ),
-                            ],
-                          ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Quick actions ─────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _sectionHeader('Accès rapide', Icons.bolt),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        _quickAction(Icons.group, 'Mon\nÉquipe', const Color(0xFF55C1CF), () => _goToTab(1)),
-                        const SizedBox(width: 10),
-                        _quickAction(Icons.fitness_center, 'Entraî-\nnements', const Color(0xFF8B5CF6), () => _goToTab(2)),
-                        const SizedBox(width: 10),
-                        _quickAction(Icons.emoji_events, 'Tournois\n& Matchs', const Color(0xFF10B981), () => _goToTab(3)),
-                        const SizedBox(width: 10),
-                        _quickAction(Icons.bar_chart, 'Statis-\ntiques', const Color(0xFFF59E0B), () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CoachStatsPage(auth: widget.auth),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Next match ────────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        Expanded(child: _sectionHeader('Prochain match', Icons.sports_soccer)),
-                        TextButton(
-                          onPressed: () => _goToTab(3),
-                          child: const Text('Voir tout', style: TextStyle(color: Color(0xFF55C1CF), fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (snap.connectionState == ConnectionState.waiting)
-                    const SizedBox()
-                  else if (nextMatch == null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _emptyCard(
-                        icon: Icons.sports_soccer,
-                        message: 'Aucun match programmé',
-                        actionLabel: 'Voir les tournois',
-                        onAction: () => _goToTab(3),
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                      child: _nextMatchCard(nextMatch),
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Upcoming trainings ────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        Expanded(child: _sectionHeader('Prochaines séances', Icons.fitness_center)),
-                        TextButton(
-                          onPressed: () => _goToTab(2),
-                          child: const Text('Voir tout', style: TextStyle(color: Color(0xFF55C1CF), fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (snap.connectionState == ConnectionState.waiting)
-                    const SizedBox()
-                  else if (upcomingTrainings.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _emptyCard(
-                        icon: Icons.fitness_center,
-                        message: 'Aucune séance planifiée',
-                        actionLabel: 'Créer une séance',
-                        onAction: () => _goToTab(2),
-                      ),
-                    )
-                  else
-                    ...upcomingTrainings.take(3).map((t) => Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                          child: _trainingRow(t),
-                        )),
-
-                  const SizedBox(height: 24),
-
-                  // ── Squad snapshot ────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        Expanded(child: _sectionHeader('Effectif', Icons.people)),
-                        TextButton(
-                          onPressed: () => _goToTab(1),
-                          child: const Text('Voir tout', style: TextStyle(color: Color(0xFF55C1CF), fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (snap.connectionState == ConnectionState.waiting)
-                    const SizedBox()
-                  else if (players.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _emptyCard(icon: Icons.group_off, message: 'Aucun joueur dans l\'équipe'),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _squadSnapshot(players),
-                    ),
-
-                  const SizedBox(height: 32),
-                ],
-              ),
+              ],
             );
           },
         ),
@@ -399,394 +189,197 @@ class _CoachHomePageState extends State<CoachHomePage> {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  Widget _sectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: const Color(0xFF64748B)),
-        const SizedBox(width: 6),
-        Text(
-          title.toUpperCase(),
-          style: const TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              color: Color(0xFF64748B), letterSpacing: 1.1),
-        ),
-      ],
-    );
-  }
-
-  Widget _statCard({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required String lottie,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withAlpha(40), color.withAlpha(15)],
-          ),
-          border: Border.all(color: color.withAlpha(40)),
-          boxShadow: [
-            BoxShadow(color: color.withAlpha(20), blurRadius: 8, offset: const Offset(0, 3)),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -4, right: -4,
-              child: SizedBox(
-                width: 80, height: 80,
-                child: Lottie.asset(lottie, fit: BoxFit.contain),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(40),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Icon(icon, color: color, size: 18),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(value,
-                          style: TextStyle(
-                              fontSize: 26, fontWeight: FontWeight.w800, color: color)),
-                      Text(label,
-                          style: const TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Tap ripple hint
-            Positioned(
-              bottom: 10, right: 10,
-              child: Icon(Icons.arrow_forward_ios, size: 11, color: color.withAlpha(120)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _quickAction(IconData icon, String label, Color color, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 8, offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withAlpha(25),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  BoxDecoration get _whiteCard => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 3))],
+      );
 
   Widget _trainingRow(Map<String, dynamic> t) {
-    final typeColors = <String, Color>{
-      'technique': Colors.blue,
-      'tactique': Colors.purple,
-      'physique': Colors.orange,
-      'match': Colors.green,
-    };
-    final color = typeColors[t['typeRaw']] ?? const Color(0xFF55C1CF);
-
+    final colors = trainingColors(t['typeRaw']);
+    final grey = Colors.grey[500];
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 4, height: 44,
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(t['title'] ?? '',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, size: 11, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
-                    Text(t['date'] ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                    if ((t['time'] as String? ?? '').isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Icon(Icons.access_time, size: 11, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Text(t['time'] ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                    ],
-                    if ((t['location'] as String? ?? '').isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Icon(Icons.location_on, size: 11, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(t['location'] ?? '',
-                            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                    ],
-                  ],
-                ),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+      decoration: _whiteCard,
+      child: Row(children: [
+        Container(
+          width: 4,
+          height: 46,
+          decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topCenter, end: Alignment.bottomCenter), borderRadius: BorderRadius.circular(4)),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(t['title'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: HomePalette.title)),
+            const SizedBox(height: 5),
+            Row(children: [
+              Icon(Icons.calendar_today_outlined, size: 12, color: grey),
+              const SizedBox(width: 4),
+              Text(t['date'] ?? '', style: TextStyle(fontSize: 12, color: grey)),
+              if ((t['time'] as String? ?? '').isNotEmpty) ...[
+                const SizedBox(width: 10),
+                Icon(Icons.access_time, size: 12, color: grey),
+                const SizedBox(width: 4),
+                Text(t['time'] ?? '', style: TextStyle(fontSize: 12, color: grey)),
               ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withAlpha(25),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(t['type'] ?? '',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
-          ),
-        ],
-      ),
+              if ((t['location'] as String? ?? '').isNotEmpty) ...[
+                const SizedBox(width: 10),
+                Icon(Icons.location_on_outlined, size: 12, color: grey),
+                const SizedBox(width: 3),
+                Flexible(child: Text(t['location'] ?? '', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: grey))),
+              ],
+            ]),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(gradient: diagonal(colors), borderRadius: BorderRadius.circular(20)),
+          child: Text(t['type'] ?? '', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+        ),
+      ]),
     );
   }
 
   Widget _squadSnapshot(List<Map<String, dynamic>> players) {
     final shown = players.take(5).toList();
     final remaining = players.length - shown.length;
-
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 10, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        children: [
-          ...shown.asMap().entries.map((entry) {
-            final i = entry.key;
-            final p = entry.value;
-            final jerseyNum = p['jerseyNumber'];
-            final isCaptain = p['isCaptain'] == true;
-            return Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 34, height: 34,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        jerseyNum != null ? '#$jerseyNum' : '—',
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(p['name'] ?? '—',
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                    ),
-                    if (isCaptain)
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text(p['position'] ?? '',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                  ],
-                ),
-                if (i < shown.length - 1 || remaining > 0)
-                  const Divider(height: 16, indent: 46),
-              ],
-            );
-          }),
-          if (remaining > 0)
-            GestureDetector(
-              onTap: () => _goToTab(1),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '+ $remaining autre${remaining > 1 ? 's' : ''} joueur${remaining > 1 ? 's' : ''}',
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF55C1CF), fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_ios, size: 11, color: Color(0xFF55C1CF)),
-                  ],
-                ),
+      padding: const EdgeInsets.fromLTRB(14, 8, 0, 4),
+      decoration: _whiteCard,
+      child: Column(children: [
+        for (var i = 0; i < shown.length; i++) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(children: [
+              GradientSquare(
+                colors: positionColors(shown[i]['position']),
+                size: 38,
+                child: Text(shown[i]['jerseyNumber'] != null ? '#${shown[i]['jerseyNumber']}' : '—',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(shown[i]['name'] ?? '—',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: HomePalette.title)),
+              ),
+              if (shown[i]['isCaptain'] == true) const Icon(Icons.star, size: 14, color: Colors.amber),
+              Container(
+                margin: const EdgeInsets.only(right: 14, left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: positionColors(shown[i]['position']).last.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                child: Text(shown[i]['position'] ?? '',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: positionColors(shown[i]['position']).first)),
+              ),
+            ]),
+          ),
+          if (i < shown.length - 1 || remaining > 0) const Divider(height: 1, indent: 50),
         ],
-      ),
+        if (remaining > 0)
+          InkWell(
+            onTap: () => _goToTab(1),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 12, 14, 10),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text('+ $remaining autre${remaining > 1 ? 's' : ''}',
+                    style: const TextStyle(fontSize: 14, color: HomePalette.link, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right, size: 18, color: HomePalette.link),
+              ]),
+            ),
+          ),
+      ]),
     );
   }
 
   Widget _nextMatchCard(Map<String, dynamic> match) {
-    DateTime? dt;
-    try { dt = DateTime.parse(match['date'] ?? ''); } catch (_) {}
-
-    final dateStr = dt != null
-        ? '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}'
-        : '';
-    final timeStr = dt != null
-        ? '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'
-        : '';
-
-    // Countdown
+    final dt = DateTime.tryParse(match['date'] ?? '')?.toLocal();
+    final dateStr = dt == null ? '' : '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    final timeStr = dt == null ? '' : '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     String countdown = '';
     if (dt != null) {
       final diff = dt.difference(DateTime.now());
-      if (diff.inDays > 0) {
-        countdown = 'Dans ${diff.inDays} jour${diff.inDays > 1 ? 's' : ''}';
-      } else if (diff.inHours > 0) {
-        countdown = 'Dans ${diff.inHours}h';
-      } else if (diff.inMinutes > 0) {
-        countdown = 'Dans ${diff.inMinutes} min';
-      } else {
-        countdown = 'Aujourd\'hui';
-      }
+      countdown = diff.inDays > 0
+          ? 'Dans ${diff.inDays}j'
+          : diff.inHours > 0
+              ? 'Dans ${diff.inHours}h'
+              : diff.inMinutes > 0
+                  ? 'Dans ${diff.inMinutes} min'
+                  : 'Aujourd\'hui';
     }
-
+    const muted = Color(0xFF9DB4C8);
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E3A5F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        gradient: diagonal(const [Color(0xFF07304F), Color(0xFF05679B)]),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: const Color(0xFF05679B).withOpacity(0.3), blurRadius: 14, offset: const Offset(0, 6))],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(children: [
+        Positioned(
+          right: -40,
+          top: -10,
+          child: Container(width: 150, height: 150, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.05))),
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF0F172A).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tournament + countdown row
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF55C1CF).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF55C1CF).withOpacity(0.4)),
-              ),
-              child: Text(
-                match['tournament'] ?? '-',
-                style: const TextStyle(color: Color(0xFF55C1CF), fontSize: 10, fontWeight: FontWeight.w600),
-              ),
-            ),
-            const Spacer(),
-            if (countdown.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(6),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(children: [
+            Row(children: [
+              Expanded(
+                child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1FB6D9).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF1FB6D9).withOpacity(0.5)),
+                  ),
+                  child: Text(match['tournament'] ?? '-',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Color(0xFF1FB6D9), fontSize: 11, fontWeight: FontWeight.w600)),
                 ),
-                child: Text(countdown,
-                    style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 10, fontWeight: FontWeight.w700)),
+                ),
               ),
+              const SizedBox(width: 8),
+              if (countdown.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: const Color(0xFFF5B921).withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                  child: Text(countdown, style: const TextStyle(color: Color(0xFFF5B921), fontSize: 11, fontWeight: FontWeight.w700)),
+                ),
+            ]),
+            const SizedBox(height: 18),
+            Row(children: [
+              const Expanded(
+                child: Text('Mon équipe', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                child: const Text('VS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+              ),
+              Expanded(
+                child: Text(match['opponent'] ?? '-',
+                    textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+            ]),
+            const SizedBox(height: 16),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(Icons.calendar_today_outlined, size: 13, color: muted),
+              const SizedBox(width: 5),
+              Text(dateStr, style: const TextStyle(color: muted, fontSize: 13)),
+              if (timeStr.isNotEmpty) ...[
+                const SizedBox(width: 14),
+                const Icon(Icons.access_time, size: 13, color: muted),
+                const SizedBox(width: 5),
+                Text(timeStr, style: const TextStyle(color: muted, fontSize: 13)),
+              ],
+            ]),
           ]),
-          const SizedBox(height: 14),
-
-          // Teams vs
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Expanded(
-              child: Text(
-                'Mon équipe',
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text('VS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
-            ),
-            Expanded(
-              child: Text(
-                match['opponent'] ?? '-',
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ]),
-
-          const SizedBox(height: 14),
-
-          // Date + time row
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.calendar_today, size: 12, color: Color(0xFF94A3B8)),
-            const SizedBox(width: 4),
-            Text(dateStr, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-            if (timeStr.isNotEmpty) ...[
-              const SizedBox(width: 12),
-              const Icon(Icons.access_time, size: 12, color: Color(0xFF94A3B8)),
-              const SizedBox(width: 4),
-              Text(timeStr, style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-            ],
-          ]),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 
@@ -794,27 +387,16 @@ class _CoachHomePageState extends State<CoachHomePage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6, offset: const Offset(0, 2)),
+      decoration: _whiteCard,
+      child: Column(children: [
+        Icon(icon, size: 36, color: Colors.grey[300]),
+        const SizedBox(height: 8),
+        Text(message, style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+        if (actionLabel != null && onAction != null) ...[
+          const SizedBox(height: 6),
+          TextButton(onPressed: onAction, child: Text(actionLabel, style: const TextStyle(color: HomePalette.link, fontSize: 13))),
         ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 36, color: Colors.grey[300]),
-          const SizedBox(height: 8),
-          Text(message, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: onAction,
-              child: Text(actionLabel, style: const TextStyle(color: Color(0xFF55C1CF), fontSize: 12)),
-            ),
-          ],
-        ],
-      ),
+      ]),
     );
   }
 }

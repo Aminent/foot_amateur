@@ -19,3 +19,8 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+// L'analyse lint « vital » plante sur certains plugins avec AGP 9 (bug lint) : on la saute en release.
+subprojects {
+    tasks.matching { it.name.startsWith("lintVital") }.configureEach { enabled = false }
+}

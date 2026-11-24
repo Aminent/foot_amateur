@@ -16,6 +16,7 @@ const TrainingAttendance = require('./TrainingAttendance');
 const PlayerClubHistory = require('./PlayerClubHistory');
 const ScoutEvaluation = require('./ScoutEvaluation');
 const ScoutWatchlist = require('./ScoutWatchlist');
+const RefereeMission = require('./RefereeMission');
 
 // Define associations
 // Tournament Team
@@ -104,6 +105,12 @@ ScoutEvaluation.belongsTo(Player, { foreignKey: 'playerId', as: 'player' });
 ScoutWatchlist.belongsTo(User, { foreignKey: 'scoutId', as: 'scout' });
 ScoutWatchlist.belongsTo(Player, { foreignKey: 'playerId', as: 'player' });
 
+// RefereeMission associations
+Match.hasMany(RefereeMission, { as: 'refereeMissions', foreignKey: 'matchId' });
+RefereeMission.belongsTo(Match, { as: 'match', foreignKey: 'matchId' });
+User.hasMany(RefereeMission, { as: 'refereeMissions', foreignKey: 'refereeId' });
+RefereeMission.belongsTo(User, { as: 'referee', foreignKey: 'refereeId' });
+
 // Make sure sequelize is properly exported
 module.exports = {
   sequelize,
@@ -124,4 +131,5 @@ module.exports = {
   PlayerClubHistory,
   ScoutEvaluation,
   ScoutWatchlist,
+  RefereeMission,
 };

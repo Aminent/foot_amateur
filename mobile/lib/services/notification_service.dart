@@ -94,12 +94,16 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
   }
 
+  static String _fcmEndpoint(String role) => role == 'coach'
+      ? '/coaches/me/fcm-token'
+      : role == 'arbitre'
+          ? '/referee/me/fcm-token'
+          : '/players/me/fcm-token';
+
   Future<void> _registerToken(
       ApiClient apiClient, String token, String userRole) async {
     try {
-      final endpoint = userRole == 'coach'
-          ? '/coaches/me/fcm-token'
-          : '/players/me/fcm-token';
+      final endpoint = _fcmEndpoint(userRole);
       await apiClient.dio.put(endpoint, data: {'fcmToken': token});
       debugPrint('[FCM] Token registered with backend.');
     } catch (e) {
@@ -200,9 +204,7 @@ class NotificationService {
   /// Call when user disables notifications — removes token from backend
   Future<void> unregisterToken(ApiClient apiClient, {required String userRole}) async {
     try {
-      final endpoint = userRole == 'coach'
-          ? '/coaches/me/fcm-token'
-          : '/players/me/fcm-token';
+      final endpoint = _fcmEndpoint(userRole);
       await apiClient.dio.put(endpoint, data: {'fcmToken': null});
     } catch (_) {}
   }

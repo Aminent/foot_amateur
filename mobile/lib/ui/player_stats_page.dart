@@ -460,10 +460,8 @@ class _PlayerStatsPageState extends State<PlayerStatsPage> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
-        border: Border.all(color: AppColors.borderGrey),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        borderRadius: BorderRadius.circular(20),
+        color: _softCard,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -526,9 +524,7 @@ class _PlayerStatsPageState extends State<PlayerStatsPage> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(children: [
                   _summaryChip('Total', '${spots.map((s) => s.y).fold(0.0, (a, b) => a + b).toInt()}', color),
-                  const SizedBox(width: 8),
                   _summaryChip('Matchs', '${perMatch.length}', const Color(0xFF64748B)),
-                  const SizedBox(width: 8),
                   _summaryChip('Moy.', '${(spots.map((s) => s.y).fold(0.0, (a, b) => a + b) / spots.length).toStringAsFixed(1)}', const Color(0xFF8B5CF6)),
                 ]),
               ),
@@ -634,152 +630,109 @@ class _PlayerStatsPageState extends State<PlayerStatsPage> {
   String _chartStatName(List<Map<String, dynamic>> list, String key) =>
       (list.firstWhere((s) => s['key'] == key, orElse: () => list[0])['name'] as String);
 
+  // ── Design de l'APK du 15/10 ────────────────────────────────────────────────
+  static const _navy = Color(0xFF0B2A44);
+  static const _softCard = Color(0xFFFAFBFD);
+  static const _kpiGradients = [
+    [Color(0xFF07304F), Color(0xFF0A6496)],
+    [Color(0xFFD62828), Color(0xFFEE6464)],
+    [Color(0xFF7C3AC8), Color(0xFFB46CE6)],
+    [Color(0xFF0778BC), Color(0xFF06BCDD)],
+  ];
+
   Widget _summaryChip(String label, String value, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.08),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: color.withOpacity(0.2)),
-    ),
-    child: RichText(text: TextSpan(children: [
-      TextSpan(text: value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color)),
-      TextSpan(text: ' $label', style: TextStyle(fontSize: 11, color: color.withOpacity(0.7))),
-    ])),
-  );
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Column(children: [
+          Text(value, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+        ]),
+      );
 
   Widget _dot(Color c) => Container(width: 7, height: 7, decoration: BoxDecoration(color: c, shape: BoxShape.circle));
 
-  // ── Radar chart ──────────────────────────────────────────────────────────────
+  Widget _sectionTitle(String title, {String? action}) => Padding(
+        padding: const EdgeInsets.only(top: 28, bottom: 14),
+        child: Row(children: [
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)))),
+          if (action != null) Text(action, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF17B3D6))),
+        ]),
+      );
+
+  // ── Radar ───────────────────────────────────────────────────────────────────
   Widget _buildRadarChartSection(Map<String, dynamic> stats, PlayerPosition pos) {
     final skills = _radarValuesForPosition(pos, stats);
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primaryBlue.withOpacity(0.05), AppColors.secondaryGreen.withOpacity(0.05)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      decoration: BoxDecoration(color: _softCard, borderRadius: BorderRadius.circular(20)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          height: 320,
+          child: CustomPaint(painter: RadarChartPainter(skills: skills), child: const SizedBox.expand()),
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.1)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-            child: Row(children: [
-              Icon(Icons.radar, color: AppColors.primaryBlue, size: 20),
-              const SizedBox(width: 8),
-              Text('PROFIL JOUEUR', style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 12)),
-            ]),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            height: 320,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
-            ),
-            child: CustomPaint(
-              size: const Size(280, 280),
-              painter: RadarChartPainter(skills: skills),
-              child: const SizedBox(width: 280, height: 280),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Legend
-          Wrap(
-            spacing: 12, runSpacing: 8,
-            children: skills.entries.map((e) => Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 10, height: 10, decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withOpacity(0.7), shape: BoxShape.circle)),
-              const SizedBox(width: 4),
-              Text('${e.key}: ${e.value.toInt()}',
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
-            ])).toList(),
-          ),
-        ]),
-      ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 14,
+          runSpacing: 8,
+          children: skills.entries
+              .map((e) => Row(mainAxisSize: MainAxisSize.min, children: [
+                    _dot(_navy),
+                    const SizedBox(width: 6),
+                    Text('${e.key}: ${e.value.toInt()}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  ]))
+              .toList(),
+        ),
+      ]),
     );
   }
 
-  // ── Stat sections ─────────────────────────────────────────────────────────────
+  // ── Sections : titre simple + lignes ────────────────────────────────────────
   Widget _buildStatsSection(Map<String, dynamic> stats, Map<String, dynamic> section) {
-    final color  = section['color'] as Color;
-    final defs   = section['stats'] as List<_StatDef>;
-    final title  = section['title'] as String;
-    final icon   = section['icon'] as IconData;
-
+    final color = section['color'] as Color;
+    final defs = section['stats'] as List<_StatDef>;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 8),
-          Text(title.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
-        ]),
-      ),
-      const SizedBox(height: 12),
-      GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12, mainAxisSpacing: 12,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 1.6,
-        children: defs.map((d) => _buildStatItem(d.label, _toInt(stats[d.key]).toString(), d.icon, color)).toList(),
-      ),
+      _sectionTitle(section['title'] as String),
+      ...defs.map((d) => _buildStatItem(d.label, _toInt(stats[d.key]).toString(), d.icon, color)),
     ]);
   }
 
   Widget _buildStatItem(String label, String value, IconData icon, Color accentColor) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withOpacity(0.15)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
-      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(color: _softCard, borderRadius: BorderRadius.circular(18)),
       child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, size: 18, color: accentColor),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: accentColor)),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600), maxLines: 2, overflow: TextOverflow.ellipsis),
-        ])),
+        Icon(icon, size: 24, color: accentColor),
+        const SizedBox(width: 18),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)))),
+        Text(value, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+        const SizedBox(width: 8),
+        Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade500),
       ]),
     );
   }
 
-  Widget _buildSeparator(Color color) => Container(
-    height: 2, margin: const EdgeInsets.symmetric(vertical: 20),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(1),
-      gradient: LinearGradient(
-        colors: [Colors.transparent, color.withOpacity(0.4), color.withOpacity(0.4), Colors.transparent],
-        stops: const [0, 0.3, 0.7, 1],
-      ),
-    ),
-  );
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Mes statistiques'),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        surfaceTintColor: const Color(0xFFDCE8F8),
+        scrolledUnderElevation: 2,
+        foregroundColor: const Color(0xFF0F172A),
         elevation: 0,
+        titleSpacing: 16,
+        title: const Text('Statistiques', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 21, color: Color(0xFF0F172A))),
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () {
             if (widget.onBackToProfile != null) {
               widget.onBackToProfile!();
@@ -796,126 +749,62 @@ class _PlayerStatsPageState extends State<PlayerStatsPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return AppErrorWidget(
-              message: snap.error.toString(),
-              onRetry: () => setState(() { _future = _load(); }),
-            );
+            return AppErrorWidget(message: snap.error.toString(), onRetry: () => setState(() { _future = _load(); }));
           }
 
-          final data       = snap.data!;
-          final stats      = data.stats;
-          final pos        = data.position;
-          final posColor   = _positionColor(pos);
+          final data = snap.data!;
+          final stats = data.stats;
+          final pos = data.position;
           final chartStats = data.chartStats;
-          final sections   = _sectionsForPosition(pos);
+          final sections = _sectionsForPosition(pos);
           final headerKpis = _headerStatsForPosition(pos, stats);
-
-          // Ensure _selectedStat is valid for current position
           if (!chartStats.any((s) => s['key'] == _selectedStat)) {
             _selectedStat = chartStats[0]['key'] as String;
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-              // ── Position badge + header KPI card ─────────────────────────────
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [const Color(0xFF0F172A), const Color(0xFF1E293B)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF07304F), Color(0xFF0A6496)]),
+                    borderRadius: BorderRadius.circular(22),
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 6))],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: posColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: posColor.withOpacity(0.4)),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(_positionIcon(pos), size: 14, color: posColor),
-                          const SizedBox(width: 6),
-                          Text(_positionLabel(pos),
-                            style: TextStyle(color: posColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ]),
-                      ),
-                      const Spacer(),
-                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        Text('${_toInt(stats['matchesPlayed'])}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                        Text('matchs joués', style: TextStyle(color: Colors.white54, fontSize: 11)),
-                      ]),
-                    ]),
-                    const SizedBox(height: 20),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12, mainAxisSpacing: 12,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      childAspectRatio: 2.0,
-                      children: headerKpis.map((k) => _buildHeaderKpi(
-                        k['label'] as String, k['value'] as String,
-                        k['icon'] as IconData, k['color'] as Color,
-                      )).toList(),
-                    ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(_positionIcon(pos), size: 16, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(_positionLabel(pos), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
                   ]),
                 ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Radar chart ───────────────────────────────────────────────────
-              _buildRadarChartSection(stats, pos),
-
-              _buildSeparator(posColor),
-
-              // ── Line chart ────────────────────────────────────────────────────
-              _buildLineChartSection(stats, chartStats),
-
-              _buildSeparator(posColor),
-
-              // ── Position-specific sections ────────────────────────────────────
-              ...sections.expand((section) => [
-                _buildStatsSection(stats, section),
-                _buildSeparator((section['color'] as Color).withOpacity(0.5)),
+                const Spacer(),
+                Text('${_toInt(stats['matchesPlayed'])} matchs',
+                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w600)),
               ]),
-
-              // ── Temps de jeu ──────────────────────────────────────────────────
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [posColor.withOpacity(0.08), posColor.withOpacity(0.04)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: posColor.withOpacity(0.2)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.timer, color: posColor, size: 18),
-                      const SizedBox(width: 8),
-                      Text('TEMPS DE JEU', style: TextStyle(color: posColor, fontWeight: FontWeight.bold, fontSize: 12)),
-                    ]),
-                    const SizedBox(height: 14),
-                    Row(children: [
-                      Expanded(child: _buildStatItem('Minutes jouées', _toInt(stats['minutesPlayed']).toString(), Icons.timer, posColor)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildStatItem('Matchs joués', _toInt(stats['matchesPlayed']).toString(), Icons.sports, posColor)),
-                    ]),
-                  ]),
-                ),
+              const SizedBox(height: 18),
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 1.25,
+                children: [
+                  for (var i = 0; i < headerKpis.length; i++)
+                    _buildHeaderKpi(headerKpis[i]['label'] as String, headerKpis[i]['value'] as String,
+                        headerKpis[i]['icon'] as IconData, _kpiGradients[i % _kpiGradients.length]),
+                ],
               ),
-
-              const SizedBox(height: 24),
+              _sectionTitle('Profil joueur', action: 'See all'),
+              _buildRadarChartSection(stats, pos),
+              _sectionTitle('Évolution par match'),
+              _buildLineChartSection(stats, chartStats),
+              ...sections.map((section) => _buildStatsSection(stats, section)),
+              _sectionTitle('Temps de jeu'),
+              _buildStatItem('Minutes jouées', _toInt(stats['minutesPlayed']).toString(), Icons.timer_outlined, _navy),
+              _buildStatItem('Matchs joués', _toInt(stats['matchesPlayed']).toString(), Icons.sports, _navy),
             ]),
           );
         },
@@ -933,21 +822,42 @@ class _PlayerStatsPageState extends State<PlayerStatsPage> {
     }
   }
 
-  Widget _buildHeaderKpi(String label, String value, IconData icon, Color color) {
+  Widget _buildHeaderKpi(String label, String value, IconData icon, List<Color> colors) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        boxShadow: [BoxShadow(color: colors.last.withOpacity(0.35), blurRadius: 14, offset: const Offset(0, 6))],
       ),
-      child: Row(children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-          Text(label, style: const TextStyle(fontSize: 10, color: Colors.white60), maxLines: 1, overflow: TextOverflow.ellipsis),
-        ])),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(children: [
+        Positioned(
+          right: -26,
+          bottom: -26,
+          child: Container(width: 110, height: 110, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.12))),
+        ),
+        Positioned(
+          right: 14,
+          bottom: 14,
+          child: Container(width: 36, height: 36, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.16))),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(icon, size: 20, color: Colors.white),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.85))),
+              ),
+            ]),
+            const Spacer(),
+            Text(value, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colors.white)),
+          ]),
+        ),
       ]),
     );
   }
@@ -973,7 +883,7 @@ class RadarChartPainter extends CustomPainter {
     final radius    = size.width / 2 - 45;
     final n         = skills.length;
     final angleStep = 2 * math.pi / n;
-    final primaryColor = AppColors.primaryBlue;
+    const primaryColor = Color(0xFF0B2A44);
 
     // Background rings
     for (int i = 1; i <= 5; i++) {
@@ -997,12 +907,11 @@ class RadarChartPainter extends CustomPainter {
     }
 
     final path = Path()..addPolygon(pts, true);
-    canvas.drawPath(path, Paint()..color = primaryColor.withOpacity(0.18)..style = PaintingStyle.fill);
+    canvas.drawPath(path, Paint()..color = primaryColor.withOpacity(0.15)..style = PaintingStyle.fill);
     canvas.drawPath(path, Paint()..color = primaryColor..strokeWidth = 2..style = PaintingStyle.stroke);
 
     for (final pt in pts) {
-      canvas.drawCircle(pt, 4, Paint()..color = primaryColor..style = PaintingStyle.fill);
-      canvas.drawCircle(pt, 4, Paint()..color = Colors.white..strokeWidth = 2..style = PaintingStyle.stroke);
+      canvas.drawCircle(pt, 5, Paint()..color = primaryColor..style = PaintingStyle.fill);
     }
 
     // Labels

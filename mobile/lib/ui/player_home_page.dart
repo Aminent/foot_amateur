@@ -1,11 +1,11 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 import '../state/auth_controller.dart';
 import '../services/player_service.dart';
 import '../services/notification_prefs_service.dart';
 import '../services/api_client.dart';
 import '../widgets/custom_widgets.dart';
+import '../widgets/home_design.dart';
 import 'player_settings_page.dart';
 import 'main_navigation_wrapper.dart';
 
@@ -68,365 +68,115 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text('Tableau de bord',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20)),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: _openSettings,
-              ),
-              if (_notifCount > 0)
-                Positioned(
-                  right: 6, top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                        color: Color(0xFFEF4444), shape: BoxShape.circle),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      _notifCount > 99 ? '99+' : '$_notifCount',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          IconButton(
-              icon: const Icon(Icons.settings_outlined), onPressed: _openSettings),
-        ],
-      ),
+      backgroundColor: HomePalette.background,
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        color: const Color(0xFF55C1CF),
+        color: HomePalette.link,
         child: FutureBuilder<_PlayerDashData>(
           future: _dashFuture,
           builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF55C1CF)),
-              );
-            }
-            if (snap.hasError) {
-              return AppErrorWidget(
-                message: snap.error.toString(),
-                onRetry: _refreshData,
-              );
-            }
-
             final data = snap.data;
             final profile = data?.profile ?? {};
             final playerMap = profile['player'] as Map<String, dynamic>? ?? {};
-            final teamMap   = profile['team']   as Map<String, dynamic>? ?? {};
-            final statsMap  = data?.stats ?? {};
-            final recentMatches = List<Map<String, dynamic>>.from(
-                profile['recentMatches'] ?? []);
-            final upcomingMatches = List<Map<String, dynamic>>.from(
-                profile['upcomingMatches'] ?? []);
-            final upcomingTrainings = (data?.trainings ?? [])
-                .where((t) => t['statusRaw'] == 'scheduled')
-                .toList();
+            final teamMap = profile['team'] as Map<String, dynamic>? ?? {};
+            final statsMap = data?.stats ?? {};
+            final recentMatches = List<Map<String, dynamic>>.from(profile['recentMatches'] ?? []);
+            final upcomingMatches = List<Map<String, dynamic>>.from(profile['upcomingMatches'] ?? []);
+            final upcomingTrainings = (data?.trainings ?? []).where((t) => t['statusRaw'] == 'scheduled').toList();
+            final name = playerMap['name'] as String? ?? widget.auth.user?.name ?? 'Joueur';
+            final position = playerMap['position'] as String? ?? '';
+            final jerseyNum = playerMap['jerseyNumber'];
+            final teamName = teamMap['name'] as String? ?? '';
+            final loading = snap.connectionState == ConnectionState.waiting;
 
-            final name = playerMap['name'] as String?
-                ?? widget.auth.user?.name
-                ?? 'Joueur';
-            final position   = playerMap['position'] as String? ?? '';
-            final jerseyNum  = playerMap['jerseyNumber'];
-            final isCaptain  = playerMap['isCaptain'] == true;
-            final teamName   = teamMap['name'] as String? ?? '';
-            final loading    = snap.connectionState == ConnectionState.waiting;
-
-            return SingleChildScrollView(
+            return CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Hero header ─────────────────────────────────────────
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF0F172A), Color(0xFF1E3A5F)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Bonjour,',
-                                  style: TextStyle(
-                                      color: Colors.white.withAlpha(160), fontSize: 14)),
-                              const SizedBox(height: 4),
-                              Text(name,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w800)),
-                              const SizedBox(height: 6),
-                              Row(children: [
-                                if (jerseyNum != null) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF55C1CF),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text('#$jerseyNum',
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 12)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                if (position.isNotEmpty)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withAlpha(20),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(position,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 12)),
-                                  ),
-                                if (isCaptain) ...[
-                                  const SizedBox(width: 8),
-                                  const Icon(Icons.star, color: Colors.amber, size: 16),
-                                ],
-                              ]),
-                              if (teamName.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Row(children: [
-                                  const Icon(Icons.shield,
-                                      color: Color(0xFF55C1CF), size: 14),
-                                  const SizedBox(width: 5),
-                                  Text(teamName,
-                                      style: const TextStyle(
-                                          color: Color(0xFF55C1CF),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600)),
-                                ]),
-                              ],
-                            ],
-                          ),
+              slivers: [
+                HomeSliverHeader(
+                  initials: initialsOf(name),
+                  avatarColors: HomePalette.cyan,
+                  name: name,
+                  chips: [
+                    if (jerseyNum != null) HeaderChip('#$jerseyNum', fill: const Color(0xFF12B4D6)),
+                    if (position.isNotEmpty) HeaderChip(position, fill: Colors.white.withOpacity(0.15)),
+                    if (playerMap['isCaptain'] == true) const Icon(Icons.star, color: Colors.amber, size: 18),
+                  ],
+                  club: teamName,
+                  notifCount: _notifCount,
+                  onBell: _openSettings,
+                  onSettings: _openSettings,
+                ),
+                if (loading)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: CircularProgressIndicator(color: HomePalette.link)),
+                  )
+                else if (snap.hasError)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: AppErrorWidget(message: snap.error.toString(), onRetry: _refreshData),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 44, 16, 32),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          physics: const NeverScrollableScrollPhysics(),
+                          childAspectRatio: 1.55,
+                          children: [
+                            GradientStatCard(value: '${statsMap['goals'] ?? 0}', label: 'Buts', icon: Icons.sports_soccer,
+                                colors: HomePalette.navy, lottie: 'assets/Soccer_player_kick_on_the_ball.json', onTap: () => _goToTab(5)),
+                            GradientStatCard(value: '${statsMap['assists'] ?? 0}', label: 'Passes D.', icon: Icons.assistant,
+                                colors: HomePalette.purple, lottie: 'assets/Football_team_players.json', onTap: () => _goToTab(5)),
+                            GradientStatCard(value: '${statsMap['matchesPlayed'] ?? 0}', label: 'Matchs', icon: Icons.emoji_events,
+                                colors: HomePalette.green, lottie: 'assets/socccerfield.json', onTap: () => _goToTab(2)),
+                            GradientStatCard(value: '${statsMap['minutesPlayed'] ?? 0}', label: 'Minutes', icon: Icons.timer_outlined,
+                                colors: HomePalette.orange, lottie: 'assets/Calendar.json', onTap: () => _goToTab(5)),
+                          ],
                         ),
-                        SizedBox(
-                          width: 90, height: 90,
-                          child: Lottie.asset('assets/hello.json'),
-                        ),
-                      ],
+                        const SizedBox(height: 24),
+                        const HomeSectionHeader('Accès rapide', Icons.bolt),
+                        const SizedBox(height: 14),
+                        Row(children: [
+                          QuickTile(icon: Icons.sports_soccer, label: 'Matchs', colors: HomePalette.orange, onTap: () => _goToTab(2)),
+                          const SizedBox(width: 10),
+                          QuickTile(icon: Icons.fitness_center, label: 'Entraîn.', colors: HomePalette.purple, onTap: () => _goToTab(3)),
+                          const SizedBox(width: 10),
+                          QuickTile(icon: Icons.bar_chart, label: 'Stats', colors: HomePalette.navy, onTap: () => _goToTab(5)),
+                          const SizedBox(width: 10),
+                          QuickTile(icon: Icons.chat_bubble, label: 'Chat', colors: HomePalette.cyan, onTap: () => _goToTab(4)),
+                        ]),
+                        const SizedBox(height: 26),
+                        HomeSectionHeader('Prochains matchs', Icons.sports_soccer, onSeeAll: () => _goToTab(2)),
+                        const SizedBox(height: 12),
+                        if (upcomingMatches.isEmpty)
+                          _emptyCard(icon: Icons.sports_soccer, message: 'Aucun match à venir')
+                        else
+                          ...upcomingMatches.take(3).map((m) => Padding(padding: const EdgeInsets.only(bottom: 10), child: _matchRow(m, teamMap['id']))),
+                        const SizedBox(height: 26),
+                        HomeSectionHeader('Derniers résultats', Icons.history, onSeeAll: () => _goToTab(2)),
+                        const SizedBox(height: 12),
+                        if (recentMatches.isEmpty)
+                          _emptyCard(icon: Icons.history, message: 'Aucun résultat récent')
+                        else
+                          ...recentMatches.take(3).map((m) => Padding(padding: const EdgeInsets.only(bottom: 10), child: _resultRow(m, teamMap['id']))),
+                        const SizedBox(height: 26),
+                        HomeSectionHeader('Prochaines séances', Icons.fitness_center, onSeeAll: () => _goToTab(3)),
+                        const SizedBox(height: 12),
+                        if (upcomingTrainings.isEmpty)
+                          _emptyCard(icon: Icons.fitness_center, message: 'Aucune séance planifiée')
+                        else
+                          ...upcomingTrainings.take(3).map((t) => Padding(padding: const EdgeInsets.only(bottom: 10), child: _trainingRow(t))),
+                      ]),
                     ),
                   ),
-
-                  // ── Stats cards ────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                    child: loading
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(
-                                  color: Color(0xFF55C1CF)),
-                            ),
-                          )
-                        : GridView.count(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            childAspectRatio: 1.55,
-                            children: [
-                              _statCard(
-                                label: 'Buts',
-                                value: '${statsMap['goals'] ?? 0}',
-                                icon: Icons.sports_soccer,
-                                color: const Color(0xFF10B981),
-                                onTap: () => _goToTab(5),
-                              ),
-                              _statCard(
-                                label: 'Passes D.',
-                                value: '${statsMap['assists'] ?? 0}',
-                                icon: Icons.assistant,
-                                color: const Color(0xFF3B82F6),
-                                onTap: () => _goToTab(5),
-                              ),
-                              _statCard(
-                                label: 'Matchs',
-                                value: '${statsMap['matchesPlayed'] ?? 0}',
-                                icon: Icons.emoji_events,
-                                color: const Color(0xFFF59E0B),
-                                onTap: () => _goToTab(2),
-                              ),
-                              _statCard(
-                                label: 'Minutes',
-                                value: '${statsMap['minutesPlayed'] ?? 0}',
-                                icon: Icons.timer,
-                                color: const Color(0xFF8B5CF6),
-                                onTap: () => _goToTab(5),
-                              ),
-                            ],
-                          ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Quick actions ──────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _sectionHeader('Accès rapide', Icons.bolt),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(children: [
-                      _quickAction(Icons.emoji_events, 'Mes\nMatchs',
-                          const Color(0xFFF59E0B), () => _goToTab(2)),
-                      const SizedBox(width: 10),
-                      _quickAction(Icons.fitness_center, 'Entraî-\nnements',
-                          const Color(0xFF8B5CF6), () => _goToTab(3)),
-                      const SizedBox(width: 10),
-                      _quickAction(Icons.bar_chart, 'Mes\nStats',
-                          const Color(0xFF10B981), () => _goToTab(5)),
-                      const SizedBox(width: 10),
-                      _quickAction(Icons.chat_bubble_outline, 'Chat\nÉquipe',
-                          const Color(0xFF55C1CF), () => _goToTab(4)),
-                    ]),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Upcoming matches ───────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(children: [
-                      Expanded(
-                          child: _sectionHeader(
-                              'Prochains matchs', Icons.sports_soccer)),
-                      TextButton(
-                        onPressed: () => _goToTab(2),
-                        child: const Text('Voir tout',
-                            style: TextStyle(
-                                color: Color(0xFF55C1CF), fontSize: 12)),
-                      ),
-                    ]),
-                  ),
-                  const SizedBox(height: 8),
-                  if (!loading)
-                    upcomingMatches.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: _emptyCard(
-                              icon: Icons.sports_soccer,
-                              message: 'Aucun match à venir',
-                            ),
-                          )
-                        : Column(
-                            children: upcomingMatches
-                                .take(3)
-                                .map((m) => Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 0, 16, 10),
-                                      child: _matchRow(m, teamMap['id']),
-                                    ))
-                                .toLi
-                                st(),
-                          ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Recent results ─────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(children: [
-                      Expanded(
-                          child: _sectionHeader(
-                              'Derniers résultats', Icons.history)),
-                      TextButton(
-                        onPressed: () => _goToTab(2),
-                        child: const Text('Voir tout',
-                            style: TextStyle(
-                                color: Color(0xFF55C1CF), fontSize: 12)),
-                      ),
-                    ]),
-                  ),
-                  const SizedBox(height: 8),
-                  if (!loading)
-                    recentMatches.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: _emptyCard(
-                              icon: Icons.history,
-                              message: 'Aucun résultat récent',
-                            ),
-                          )
-                        : Column(
-                            children: recentMatches
-                                .take(3)
-                                .map((m) => Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 0, 16, 10),
-                                      child: _resultRow(m, teamMap['id']),
-                                    ))
-                                .toList(),
-                          ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Upcoming trainings ─────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(children: [
-                      Expanded(
-                          child: _sectionHeader(
-                              'Prochaines séances', Icons.fitness_center)),
-                      TextButton(
-                        onPressed: () => _goToTab(3),
-                        child: const Text('Voir tout',
-                            style: TextStyle(
-                                color: Color(0xFF55C1CF), fontSize: 12)),
-                      ),
-                    ]),
-                  ),
-                  const SizedBox(height: 8),
-                  if (!loading)
-                    upcomingTrainings.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: _emptyCard(
-                              icon: Icons.fitness_center,
-                              message: 'Aucune séance planifiée',
-                            ),
-                          )
-                        : Column(
-                            children: upcomingTrainings
-                                .take(3)
-                                .map((t) => Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 0, 16, 10),
-                                      child: _trainingRow(t),
-                                    ))
-                                .toList(),
-                          ),
-
-                  const SizedBox(height: 32),
-                ],
-              ),
+              ],
             );
           },
         ),
@@ -436,335 +186,128 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  Widget _sectionHeader(String title, IconData icon) {
-    return Row(children: [
-      Icon(icon, size: 16, color: const Color(0xFF64748B)),
-      const SizedBox(width: 6),
-      Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF64748B),
-            letterSpacing: 1.1),
-      ),
+  BoxDecoration get _whiteCard => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 3))],
+      );
+
+  Widget _meta(IconData icon, String text, {bool flexible = false}) {
+    final grey = Colors.grey[500];
+    final label = Text(text, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: grey));
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 13, color: grey),
+      const SizedBox(width: 4),
+      flexible ? Flexible(child: label) : label,
     ]);
-  }
-
-  Widget _statCard({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withAlpha(40), color.withAlpha(15)],
-          ),
-          border: Border.all(color: color.withAlpha(40)),
-          boxShadow: [
-            BoxShadow(
-                color: color.withAlpha(20),
-                blurRadius: 8,
-                offset: const Offset(0, 3)),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: color.withAlpha(40),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(value,
-                    style: TextStyle(
-                        fontSize: 26, fontWeight: FontWeight.w800, color: color)),
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B))),
-              ]),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _quickAction(
-      IconData icon, String label, Color color, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withAlpha(12),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Column(children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withAlpha(25),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 8),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF334155)),
-                textAlign: TextAlign.center),
-          ]),
-        ),
-      ),
-    );
   }
 
   Widget _matchRow(Map<String, dynamic> match, dynamic teamId) {
     final homeTeam = match['homeTeam'] as Map<String, dynamic>? ?? {};
     final awayTeam = match['awayTeam'] as Map<String, dynamic>? ?? {};
-    final isHome   = match['homeTeamId'] == teamId;
+    final isHome = match['homeTeamId'] == teamId;
     final opponent = isHome ? awayTeam : homeTeam;
-    final date     = _formatDate(match['date'] as String?);
-    final time     = match['time'] as String? ?? '';
+    final time = match['time'] as String? ?? '';
     final location = match['location'] as String? ?? '';
-
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withAlpha(10),
-              blurRadius: 6,
-              offset: const Offset(0, 2)),
-        ],
-      ),
+      decoration: _whiteCard,
       child: Row(children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF59E0B).withAlpha(25),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.sports_soccer,
-              color: Color(0xFFF59E0B), size: 22),
-        ),
+        const GradientSquare(colors: HomePalette.orange, size: 44, child: Icon(Icons.sports_soccer, color: Colors.white, size: 22)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              'vs ${opponent['name'] ?? 'Inconnu'}',
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A)),
-            ),
-            const SizedBox(height: 3),
+            Text('vs ${opponent['name'] ?? 'Inconnu'}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: HomePalette.title)),
+            const SizedBox(height: 5),
             Row(children: [
-              Icon(Icons.calendar_today, size: 11, color: Colors.grey[500]),
-              const SizedBox(width: 4),
-              Text(date, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-              if (time.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.access_time, size: 11, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Text(time, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-              ],
-              if (location.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.location_on, size: 11, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(location,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ],
+              _meta(Icons.calendar_today_outlined, _formatDate(match['date'] as String?)),
+              if (time.isNotEmpty) ...[const SizedBox(width: 10), _meta(Icons.access_time, time)],
+              if (location.isNotEmpty) ...[const SizedBox(width: 10), Flexible(child: _meta(Icons.location_on_outlined, location, flexible: true))],
             ]),
           ]),
         ),
+        const SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF59E0B).withAlpha(25),
-            borderRadius: BorderRadius.circular(20),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(color: const Color(0xFFFDF0C4), borderRadius: BorderRadius.circular(20)),
           child: Text(isHome ? 'Domicile' : 'Extérieur',
-              style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFF59E0B))),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFD97706))),
         ),
       ]),
     );
   }
 
   Widget _resultRow(Map<String, dynamic> match, dynamic teamId) {
-    final homeTeam  = match['homeTeam']  as Map<String, dynamic>? ?? {};
-    final awayTeam  = match['awayTeam']  as Map<String, dynamic>? ?? {};
-    final isHome    = match['homeTeamId'] == teamId;
-    final opponent  = isHome ? awayTeam : homeTeam;
+    final homeTeam = match['homeTeam'] as Map<String, dynamic>? ?? {};
+    final awayTeam = match['awayTeam'] as Map<String, dynamic>? ?? {};
+    final isHome = match['homeTeamId'] == teamId;
+    final opponent = isHome ? awayTeam : homeTeam;
     final homeScore = match['homeTeamScore'] as int? ?? 0;
     final awayScore = match['awayTeamScore'] as int? ?? 0;
-    final myScore   = isHome ? homeScore : awayScore;
-    final oppScore  = isHome ? awayScore : homeScore;
-    final won       = myScore > oppScore;
-    final draw      = myScore == oppScore;
-    final Color resultColor = won
-        ? Colors.green
-        : draw
-            ? const Color(0xFFF59E0B)
-            : Colors.red;
-    final String resultLabel = won ? 'V' : draw ? 'N' : 'D';
-
+    final myScore = isHome ? homeScore : awayScore;
+    final oppScore = isHome ? awayScore : homeScore;
+    final won = myScore > oppScore, draw = myScore == oppScore;
+    final colors = won ? HomePalette.green : draw ? HomePalette.orange : HomePalette.red;
+    final dt = DateTime.tryParse(match['date'] as String? ?? '')?.toLocal();
+    final date = dt == null ? '—' : '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withAlpha(10),
-              blurRadius: 6,
-              offset: const Offset(0, 2)),
-        ],
-      ),
+      decoration: _whiteCard,
       child: Row(children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-              color: resultColor.withAlpha(30), shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: Text(resultLabel,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: resultColor)),
+        GradientSquare(
+          colors: colors,
+          size: 44,
+          child: Text(won ? 'V' : draw ? 'N' : 'D', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              'vs ${opponent['name'] ?? 'Inconnu'}',
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF0F172A)),
-            ),
-            const SizedBox(height: 2),
-            Text(_formatDate(match['date'] as String?),
-                style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            Text('vs ${opponent['name'] ?? 'Inconnu'}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: HomePalette.title)),
+            const SizedBox(height: 4),
+            Text(date, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
           ]),
         ),
-        Text(
-          '$myScore — $oppScore',
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: resultColor),
-        ),
+        Text('$myScore — $oppScore', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: colors.first)),
       ]),
     );
   }
 
   Widget _trainingRow(Map<String, dynamic> t) {
-    final typeColors = <String, Color>{
-      'technique': Colors.blue,
-      'tactique':  Colors.purple,
-      'physique':  Colors.orange,
-      'match':     Colors.green,
-    };
-    final color = typeColors[t['typeRaw']] ?? const Color(0xFF55C1CF);
-
+    final colors = trainingColors(t['typeRaw']);
+    final time = t['time'] as String? ?? '';
+    final location = t['location'] as String? ?? '';
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withAlpha(10),
-              blurRadius: 6,
-              offset: const Offset(0, 2)),
-        ],
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+      decoration: _whiteCard,
       child: Row(children: [
         Container(
-            width: 4,
-            height: 44,
-            decoration:
-                BoxDecoration(color: color, borderRadius: BorderRadius.circular(4))),
-        const SizedBox(width: 12),
+          width: 4,
+          height: 46,
+          decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topCenter, end: Alignment.bottomCenter), borderRadius: BorderRadius.circular(4)),
+        ),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(t['title'] ?? '',
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A))),
-            const SizedBox(height: 3),
+            Text(t['title'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: HomePalette.title)),
+            const SizedBox(height: 5),
             Row(children: [
-              Icon(Icons.calendar_today, size: 11, color: Colors.grey[500]),
-              const SizedBox(width: 4),
-              Text(t['date'] ?? '',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-              if ((t['time'] as String? ?? '').isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.access_time, size: 11, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Text(t['time'] ?? '',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-              ],
-              if ((t['location'] as String? ?? '').isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.location_on, size: 11, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(t['location'] ?? '',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ],
+              _meta(Icons.calendar_today_outlined, t['date'] ?? ''),
+              if (time.isNotEmpty) ...[const SizedBox(width: 10), _meta(Icons.access_time, time)],
+              if (location.isNotEmpty) ...[const SizedBox(width: 10), Flexible(child: _meta(Icons.location_on_outlined, location, flexible: true))],
             ]),
           ]),
         ),
+        const SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          decoration: BoxDecoration(
-              color: color.withAlpha(25), borderRadius: BorderRadius.circular(20)),
-          child: Text(t['type'] ?? '',
-              style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(gradient: diagonal(colors), borderRadius: BorderRadius.circular(20)),
+          child: Text(t['type'] ?? '', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
         ),
       ]),
     );
@@ -773,21 +316,12 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
   Widget _emptyCard({required IconData icon, required String message}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withAlpha(10),
-              blurRadius: 6,
-              offset: const Offset(0, 2)),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      decoration: _whiteCard,
       child: Column(children: [
-        Icon(icon, size: 36, color: Colors.grey[300]),
-        const SizedBox(height: 8),
-        Text(message, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+        Icon(icon, size: 36, color: const Color(0xFFB8C4D2)),
+        const SizedBox(height: 10),
+        Text(message, style: const TextStyle(color: Color(0xFF9AA8B8), fontSize: 15)),
       ]),
     );
   }
@@ -796,12 +330,18 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
     if (dateString == null || dateString.isEmpty) return '—';
     try {
       final date = DateTime.parse(dateString);
-      final now  = DateTime.now();
-      final diff = now.difference(date);
+      final diff = DateTime.now().difference(date);
+      if (diff.isNegative) {
+        final left = -diff.inDays;
+        if (left == 0) return 'Aujourd\'hui';
+        if (left == 1) return 'Demain';
+        if (left < 7) return 'Dans ${left}j';
+        return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+      }
       if (diff.inDays == 0) return 'Aujourd\'hui';
       if (diff.inDays == 1) return 'Hier';
-      if (diff.inDays < 7)  return 'Il y a ${diff.inDays}j';
-      return '${date.day}/${date.month}/${date.year}';
+      if (diff.inDays < 7) return 'Il y a ${diff.inDays}j';
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
     } catch (_) {
       return dateString;
     }

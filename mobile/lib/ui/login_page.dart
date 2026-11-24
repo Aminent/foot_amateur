@@ -1,9 +1,12 @@
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../state/auth_controller.dart';
 import '../theme/app_theme.dart';
-import '../widgets/custom_widgets.dart';
 import 'loading_screen.dart';
 
 class LoginPage extends StatefulWidget {
@@ -43,7 +46,20 @@ class _LoginPageState extends State<LoginPage>
     );
 
     _animationController.forward();
+
+    // Pré-remplit le dernier email utilisé
+    SharedPreferences.getInstance().then((p) {
+      final saved = p.getString(_savedEmailKey);
+      final remember = p.getBool(_rememberKey) ?? true;
+      if (!mounted) return;
+      setState(() => _remember = remember);
+      if (remember && saved != null && _email.text.isEmpty) _email.text = saved;
+    });
   }
+
+  static const _savedEmailKey = 'last_login_email';
+  static const _rememberKey = 'remember_login_email';
+  bool _remember = true;
 
   @override
   void dispose() {
@@ -60,6 +76,15 @@ class _LoginPageState extends State<LoginPage>
       // Add timeout to prevent infinite loading
       final success = await widget.auth.login(_email.text.trim(), _password.text)
           .timeout(const Duration(seconds: 30));
+      if (success == true) {
+        final p = await SharedPreferences.getInstance();
+        await p.setBool(_rememberKey, _remember);
+        if (_remember) {
+          await p.setString(_savedEmailKey, _email.text.trim());
+        } else {
+          await p.remove(_savedEmailKey);
+        }
+      }
 
       // Show success message
       if (mounted) {
@@ -99,288 +124,202 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
+
+  // ── UI (design de l'APK du 15/10) ──────────────────────────────────────────
+  bool _obscure = true;
+
+  InputDecoration _glassField(String hint, IconData icon, {Widget? suffix}) {
+    OutlineInputBorder border(Color c, [double w = 1.2]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: c, width: w),
+        );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 17),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.only(left: 18, right: 12),
+        child: Icon(icon, color: Colors.white.withOpacity(0.85), size: 24),
+      ),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.07),
+      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      border: border(Colors.white.withOpacity(0.28)),
+      enabledBorder: border(Colors.white.withOpacity(0.28)),
+      focusedBorder: border(const Color(0xFF6C63FF), 1.8),
+      errorBorder: border(const Color(0xFFEF4444), 1.8),
+      focusedErrorBorder: border(const Color(0xFFEF4444), 1.8),
+      errorStyle: const TextStyle(color: Color(0xFFF5A623), fontSize: 14),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Show loading screen during login
     if (widget.auth.loading) {
-      return LoadingScreen(
-        message: 'Connexion en cours...',
-        showBackground: true,
-      );
+      return LoadingScreen(message: 'Connexion en cours...', showBackground: true);
     }
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+      backgroundColor: const Color(0xFF0B1424),
       body: Container(
         decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/foot-bg.jpg'),
-            fit: BoxFit.cover,
-          ),
+          image: DecorationImage(image: AssetImage('assets/bg_foot2.png'), fit: BoxFit.cover),
         ),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.3),
-                Colors.black.withOpacity(0.5),
-              ],
+              colors: [Colors.black.withOpacity(0.35), Colors.black.withOpacity(0.15), Colors.black.withOpacity(0.45)],
             ),
           ),
           child: AnimatedBuilder(
             animation: widget.auth,
-            builder: (context, _) {
-              return Stack(
-                children: [
-                  // Main content
-                  Center(
-                    child: SingleChildScrollView(
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
+            builder: (context, _) => Center(
+              child: SingleChildScrollView(
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 144,
+                            height: 144,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3A4150).withOpacity(0.92),
+                              shape: BoxShape.circle,
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 24, offset: const Offset(0, 10))],
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Footballer animation with gradient
-                                Container(
-                                  width: 150,
-                                  height: 150,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
+                            child: Lottie.asset('assets/footballer.json', height: 116, width: 116),
+                          ),
+                          const SizedBox(height: 36),
+                          const Text(
+                            'Foot Amateur',
+                            style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 0.3),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Connectez-vous à votre compte',
+                            style: TextStyle(color: Colors.white.withOpacity(0.92), fontSize: 17, fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 36),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(26, 30, 26, 28),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.10),
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(color: Colors.white.withOpacity(0.30), width: 1.2),
+                                ),
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(children: [
+                                    TextFormField(
+                                      controller: _email,
+                                      keyboardType: TextInputType.emailAddress,
+                                      textInputAction: TextInputAction.next,
+                                      style: const TextStyle(color: Colors.white, fontSize: 17),
+                                      cursorColor: const Color(0xFFF5A623),
+                                      decoration: _glassField('Email', Icons.person_outline),
+                                      validator: (v) {
+                                        if (v == null || v.trim().isEmpty) return 'Email requis';
+                                        if (!v.contains('@')) return 'Email invalide';
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 18),
+                                    TextFormField(
+                                      controller: _password,
+                                      obscureText: _obscure,
+                                      onFieldSubmitted: (_) => _submit(),
+                                      style: const TextStyle(color: Colors.white, fontSize: 17),
+                                      cursorColor: const Color(0xFFF5A623),
+                                      decoration: _glassField(
+                                        'Mot de passe',
+                                        Icons.lock_outline,
+                                        suffix: IconButton(
+                                          onPressed: () => setState(() => _obscure = !_obscure),
+                                          icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                              color: Colors.white.withOpacity(0.7)),
+                                        ),
                                       ),
+                                      validator: (v) => (v == null || v.isEmpty) ? 'Mot de passe requis' : null,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () => setState(() => _remember = !_remember),
+                                      child: Row(children: [
+                                        SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: Checkbox(
+                                            value: _remember,
+                                            onChanged: (v) => setState(() => _remember = v ?? false),
+                                            activeColor: const Color(0xFF6C63FF),
+                                            checkColor: Colors.white,
+                                            side: BorderSide(color: Colors.white.withOpacity(0.7), width: 1.5),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text('Se souvenir de moi',
+                                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 15)),
+                                      ]),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    if (widget.auth.error != null) ...[
+                                      Text(widget.auth.error!,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(color: Color(0xFFF5A623), fontSize: 14)),
+                                      const SizedBox(height: 14),
                                     ],
-                                  ),
-                                  child: Lottie.asset(
-                                    'assets/footballer.json',
-                                    height: 120,
-                                    width: 120,
-                                  ),
-                                ),
-                                const SizedBox(height: 32),
-
-                                // Title with gradient effect
-                                Text(
-                                  'Foot Amateur',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .displaySmall
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(0.5),
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Connectez-vous à votre compte',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Colors.white.withOpacity(0.9),
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(0.3),
-                                            offset: const Offset(0, 1),
-                                            blurRadius: 2,
-                                          ),
-                                        ],
-                                      ),
-                                ),
-                                const SizedBox(height: 32),
-
-                                // Login card
-                                Card(
-                                  elevation: 8,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  color: Colors.white.withOpacity(0.95),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Form(
-                                      key: _formKey,
-                                      child: Column(
-                                        children: [
-                                          // Email field
-                                          TextFormField(
-                                            controller: _email,
-                                            keyboardType:
-                                                TextInputType.emailAddress,
-                                            enabled: !widget.auth.loading,
-                                            decoration: InputDecoration(
-                                              labelText: 'Adresse email',
-                                              prefixIcon: const Icon(
-                                                Icons.email_outlined,
-                                                color: AppColors.primaryBlue,
-                                              ),
-                                              hintText:
-                                                  'exemple@email.com',
-                                            ),
-                                            validator: (v) {
-                                              if (v == null ||
-                                                  v.trim().isEmpty) {
-                                                return 'Email requis';
-                                              }
-                                              if (!v.contains('@')) {
-                                                return 'Email invalide';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                          const SizedBox(height: 20),
-
-                                          // Password field
-                                          TextFormField(
-                                            controller: _password,
-                                            obscureText: true,
-                                            enabled: !widget.auth.loading,
-                                            decoration: InputDecoration(
-                                              labelText: 'Mot de passe',
-                                              prefixIcon: const Icon(
-                                                Icons.lock_outline,
-                                                color: AppColors.primaryBlue,
-                                              ),
-                                              hintText: 'Votre mot de passe',
-                                            ),
-                                            validator: (v) {
-                                              if (v == null || v.isEmpty) {
-                                                return 'Mot de passe requis';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                          const SizedBox(height: 28),
-
-                                          // Error message
-                                          if (widget.auth.error != null) ...[
-                                            Container(
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.errorRed
-                                                    .withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: AppColors.errorRed,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  const Icon(
-                                                    Icons.error_outline,
-                                                    color: AppColors.errorRed,
-                                                    size: 20,
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Text(
-                                                      widget.auth.error!,
-                                                      style:
-                                                          TextStyle(
-                                                            color: AppColors
-                                                                .errorRed,
-                                                            fontSize: 14,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
+                                    GestureDetector(
+                                      onTap: widget.auth.loading ? null : _submit,
+                                      child: Container(
+                                        width: double.infinity,
+                                        height: 56,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(24),
+                                          gradient: const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF4F46E5)]),
+                                          boxShadow: [
+                                            BoxShadow(color: const Color(0xFF6C63FF).withOpacity(0.45), blurRadius: 22, offset: const Offset(0, 8)),
                                           ],
-
-                                          // Login button
-                                          SizedBox(
-                                            width: double.infinity,
-                                            height: 52,
-                                            child: ElevatedButton(
-                                              onPressed:
-                                                  widget.auth.loading
-                                                      ? null
-                                                      : _submit,
-                                              child: widget.auth.loading
-                                                  ? const SizedBox(
-                                                      width: 20,
-                                                      height: 20,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                        strokeWidth: 2.5,
-                                                        valueColor:
-                                                            AlwaysStoppedAnimation<
-                                                                Color>(
-                                                              Colors.white,
-                                                            ),
-                                                          ),
-                                                    )
-                                                  : const Text(
-                                                      'Se connecter',
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
+                                        child: const Text('LOGIN',
+                                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 3.5)),
                                       ),
                                     ),
-                                  ),
+                                  ]),
                                 ),
-                                const SizedBox(height: 24),
-
-                                // Footer text
-                                Text(
-                                  'Contact administrateur pour créer un compte',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.white.withOpacity(0.8),
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(0.3),
-                                            offset: const Offset(0, 1),
-                                            blurRadius: 2,
-                                          ),
-                                        ],
-                                      ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 30),
+                          Text(
+                            'Contact administrateur pour créer un compte',
+                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14, letterSpacing: 0.4),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              );
-            },
+                ),
+              ),
+            ),
           ),
         ),
       ),
-    );
+    ));
   }
 }
-

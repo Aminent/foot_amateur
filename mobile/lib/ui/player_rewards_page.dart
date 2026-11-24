@@ -5,6 +5,7 @@ import '../state/auth_controller.dart';
 import '../services/player_service.dart';
 import '../services/api_client.dart';
 import '../widgets/custom_widgets.dart';
+import '../widgets/home_design.dart';
 
 class PlayerRewardsPage extends StatefulWidget {
   final AuthController auth;
@@ -41,18 +42,18 @@ class _PlayerRewardsPageState extends State<PlayerRewardsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: HomePalette.background,
       appBar: AppBar(
-        title: const Text('Mes Récompenses'),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
+        title: const Text('Mes Récompenses', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20, color: HomePalette.title)),
+        backgroundColor: Colors.white,
+        foregroundColor: HomePalette.title,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFFFBBF24),
+          indicatorColor: HomePalette.link,
           indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
+          labelColor: HomePalette.link,
+          unselectedLabelColor: const Color(0xFF94A3B8),
           labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           tabs: const [
             Tab(icon: Icon(Icons.emoji_events, size: 18), text: 'Badges'),
@@ -97,6 +98,8 @@ class _BadgesTab extends StatelessWidget {
   final List badges;
   const _BadgesTab({required this.badges});
 
+  static const _order = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
+
   @override
   Widget build(BuildContext context) {
     if (badges.isEmpty) {
@@ -107,36 +110,71 @@ class _BadgesTab extends StatelessWidget {
       );
     }
 
-    // Group by rarity order for display
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // summary bar
-        _SummaryBar(
-          items: [
-            _SummaryItem('Total', badges.length, const Color(0xFFF59E0B), Icons.emoji_events),
-            _SummaryItem('Légendaire', badges.where((b) => b['rarity'] == 'legendary').length, const Color(0xFFFF6B00), Icons.local_fire_department),
-            _SummaryItem('Épique', badges.where((b) => b['rarity'] == 'epic').length, const Color(0xFF8B5CF6), Icons.auto_awesome),
-            _SummaryItem('Rare', badges.where((b) => b['rarity'] == 'rare').length, const Color(0xFF3B82F6), Icons.diamond),
-          ],
+    final sorted = badges.cast<Map<String, dynamic>>().toList()
+      ..sort((a, b) => _order.indexOf(a['rarity'] ?? 'common').compareTo(_order.indexOf(b['rarity'] ?? 'common')));
+    final total = sorted.fold<int>(0, (s, b) => s + ((b['count'] as int?) ?? 1));
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: diagonal(HomePalette.navy),
+            boxShadow: [BoxShadow(color: HomePalette.navy.last.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 5))],
+          ),
+          child: Row(children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.military_tech, color: Color(0xFFFBBF24), size: 30),
+            ),
+            const SizedBox(width: 12),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('$total', style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800, height: 1)),
+              const SizedBox(height: 2),
+              Text('badges obtenus', style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 12)),
+            ]),
+            const Spacer(),
+            for (final r in _order.take(4))
+              Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Column(children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(shape: BoxShape.circle, gradient: diagonal(_rarityGradient(r))),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('${sorted.where((b) => b['rarity'] == r).length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                ]),
+              ),
+          ]),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
+        const HomeSectionHeader('Ma collection', Icons.workspace_premium),
+        const SizedBox(height: 14),
         GridView.builder(
           shrinkWrap: true,
+          padding: EdgeInsets.zero,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.82,
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.8,
           ),
-          itemCount: badges.length,
-          itemBuilder: (_, i) => _BadgeCard(badge: badges[i] as Map<String, dynamic>),
+          itemCount: sorted.length,
+          itemBuilder: (_, i) => _BadgeMedal(badge: sorted[i]),
         ),
-      ]),
+      ],
     );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rewards tab
@@ -175,12 +213,12 @@ class _RewardsTab extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Badge card
+// Badge : médaille compacte + fiche détaillée au toucher
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BadgeCard extends StatelessWidget {
+class _BadgeMedal extends StatelessWidget {
   final Map<String, dynamic> badge;
-  const _BadgeCard({required this.badge});
+  const _BadgeMedal({required this.badge});
 
   @override
   Widget build(BuildContext context) {
@@ -188,99 +226,137 @@ class _BadgeCard extends StatelessWidget {
     final type = badge['type'] as String? ?? 'achievement';
     final rarity = badge['rarity'] as String? ?? 'common';
     final count = badge['count'] as int? ?? 1;
-    final awardedBy = badge['awardedBy'] as String? ?? 'Système';
-    final tournamentName = badge['tournamentName'] as String?;
-    final dateRaw = badge['date'] as String?;
-    final iconStr = badge['icon'] as String?;
+    final g = _rarityGradient(rarity);
 
-    final color = _rarityColor(rarity);
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withAlpha(38), color.withAlpha(18)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: () => _showBadge(context, badge),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(6, 12, 6, 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 3))],
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withAlpha(100), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: color.withAlpha(40), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // icon + count
-          Row(children: [
+        child: Column(children: [
+          Stack(clipBehavior: Clip.none, children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 54,
+              height: 54,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: color.withAlpha(50),
-                borderRadius: BorderRadius.circular(12),
+                shape: BoxShape.circle,
+                gradient: diagonal(g),
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [BoxShadow(color: g.first.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))],
               ),
-              child: _iconWidget(iconStr, type, color, size: 26),
+              child: _iconWidget(badge['icon'] as String?, type, Colors.white, size: 24),
             ),
-            const Spacer(),
             if (count > 1)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(20),
+              Positioned(
+                right: -8,
+                top: -4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: HomePalette.title,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: Text('x$count', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
                 ),
-                child: Text('x$count',
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
               ),
           ]),
-          const SizedBox(height: 10),
-
-          // name
-          Text(name,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 6),
-
-          // rarity + type chips
-          Row(children: [
-            _Chip(_rarityLabel(rarity), color),
-            const SizedBox(width: 4),
-            _Chip(_typeLabel(type), const Color(0xFF64748B)),
-          ]),
-
           const Spacer(),
-
-          // awarded by / tournament
-          if (tournamentName != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Row(children: [
-                const Icon(Icons.emoji_events, size: 11, color: Color(0xFFF59E0B)),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Text(tournamentName,
-                      style: const TextStyle(fontSize: 10, color: Color(0xFFF59E0B)),
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ]),
-            ),
-          Row(children: [
-            const Icon(Icons.person, size: 11, color: Color(0xFF94A3B8)),
-            const SizedBox(width: 3),
-            Expanded(
-              child: Text(awardedBy,
-                  style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-                  overflow: TextOverflow.ellipsis),
-            ),
-            Text(_fmtDate(dateRaw),
-                style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-          ]),
+          Text(name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: HomePalette.title, height: 1.2)),
+          const SizedBox(height: 4),
+          Text(_rarityLabel(rarity), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: g.first)),
         ]),
       ),
     );
+  }
+}
+
+void _showBadge(BuildContext context, Map<String, dynamic> badge) {
+  final name = badge['name'] as String? ?? 'Badge';
+  final type = badge['type'] as String? ?? 'achievement';
+  final rarity = badge['rarity'] as String? ?? 'common';
+  final count = badge['count'] as int? ?? 1;
+  final description = badge['description'] as String? ?? '';
+  final awardedBy = badge['awardedBy'] as String? ?? 'Système';
+  final tournamentName = badge['tournamentName'] as String?;
+  final date = _fmtDate(badge['date'] as String?);
+  final g = _rarityGradient(rarity);
+
+  Widget info(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Row(children: [
+          Icon(icon, size: 18, color: Colors.grey[500]),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 14, color: Color(0xFF334155)))),
+        ]),
+      );
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+    builder: (_) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 20),
+          Container(
+            width: 84,
+            height: 84,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: diagonal(g),
+              border: Border.all(color: Colors.white, width: 4),
+              boxShadow: [BoxShadow(color: g.first.withOpacity(0.45), blurRadius: 18, offset: const Offset(0, 6))],
+            ),
+            child: _iconWidget(badge['icon'] as String?, type, Colors.white, size: 38),
+          ),
+          const SizedBox(height: 14),
+          Text(name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: HomePalette.title)),
+          const SizedBox(height: 8),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(gradient: diagonal(g), borderRadius: BorderRadius.circular(20)),
+              child: Text(_rarityLabel(rarity), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(width: 6),
+            _Chip(_typeLabel(type), const Color(0xFF64748B)),
+            if (count > 1) ...[const SizedBox(width: 6), _Chip('x$count', HomePalette.link)],
+          ]),
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(description, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14.5, color: Color(0xFF64748B))),
+          ],
+          const SizedBox(height: 10),
+          const Divider(),
+          info(Icons.person_outline, 'Attribué par $awardedBy'),
+          if (tournamentName != null) info(Icons.emoji_events_outlined, tournamentName),
+          if (date.isNotEmpty) info(Icons.calendar_today_outlined, 'Obtenu le $date'),
+        ]),
+      ),
+    ),
+  );
+}
+
+List<Color> _rarityGradient(String r) {
+  switch (r) {
+    case 'legendary': return HomePalette.orange;
+    case 'epic':      return HomePalette.purple;
+    case 'rare':      return HomePalette.sky;
+    case 'uncommon':  return HomePalette.green;
+    default:          return const [Color(0xFF64748B), Color(0xFF94A3B8)];
   }
 }
 
@@ -501,15 +577,6 @@ Widget _iconWidget(String? iconStr, String type, Color color, {double size = 24}
 
 // ── lookup maps ───────────────────────────────────────────────────────────────
 
-Color _rarityColor(String r) {
-  switch (r) {
-    case 'legendary': return const Color(0xFFFF6B00);
-    case 'epic':      return const Color(0xFF8B5CF6);
-    case 'rare':      return const Color(0xFF3B82F6);
-    case 'uncommon':  return const Color(0xFF10B981);
-    default:          return const Color(0xFF94A3B8);
-  }
-}
 
 Color _categoryColor(String c) {
   switch (c) {

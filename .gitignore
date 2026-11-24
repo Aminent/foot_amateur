@@ -62,3 +62,10 @@ VISUAL_GUIDE.md
 VISUAL_WIREFRAMES.md
 NETWORK_CONFIG.md
 IMPLEMENTATION_SUMMARY.md
+
+backend/SEED_ACCOUNTS.md
+
+# Fichiers locaux
+.claude/
+apk_recovery/
+*.apk

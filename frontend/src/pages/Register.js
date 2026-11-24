@@ -291,7 +291,6 @@ const Register = () => {
                   >
                     <MenuItem value="joueur">Joueur</MenuItem>
                     <MenuItem value="coach">Coach</MenuItem>
-                    <MenuItem value="admin">Administrateur</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

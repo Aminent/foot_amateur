@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../state/auth_controller.dart';
 import '../services/notification_service.dart';
@@ -143,238 +142,6 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
     );
   }
 
-  List<BottomNavigationBarItem> _buildNavItems() {
-    final isCoach = widget.auth.user?.role == 'coach';
-    
-    if (isCoach) {
-      return [
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 0 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 0 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.person,
-              color: _selectedIndex == 0 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Mon profil',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 1 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 1 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.emoji_events,
-              color: _selectedIndex == 1 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Mes Récompenses',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 2 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 2 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.fitness_center,
-              color: _selectedIndex == 2 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Séance d\'entraînement',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 3 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 3 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.sports_soccer,
-              color: _selectedIndex == 3 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Mes tournois',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 4 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 4 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.chat_bubble,
-              color: _selectedIndex == 4 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Chat',
-        ),
-      ];
-    } else {
-      return [
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 0 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 0 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.person,
-              color: _selectedIndex == 0 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Mon profil',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 1 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 1 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.emoji_events,
-              color: _selectedIndex == 1 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Récompenses',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 2
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 2 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.sports_soccer,
-              color: _selectedIndex == 2 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Mes matchs',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 3 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 3 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.fitness_center,
-              color: _selectedIndex == 3 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Entraînements',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 4 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 4 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.chat_bubble,
-              color: _selectedIndex == 4 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Chat',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: _selectedIndex == 5 
-                ? LinearGradient(
-                    colors: [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-              color: _selectedIndex == 5 ? null : Colors.transparent,
-            ),
-            child: Icon(
-              Icons.bar_chart,
-              color: _selectedIndex == 5 ? Colors.white : const Color(0xFF5F6368),
-              size: 20,
-            ),
-          ),
-          label: 'Statistiques',
-        ),
-      ];
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -390,172 +157,120 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         },
         children: _buildPages(),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFFFFFFFF),
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
 
-              const Color(0xFFF8F9FA),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: _buildNavItems().asMap().entries.map((entry) {
-                final index = entry.key;
-                return GestureDetector(
-                  onTap: () => _onItemTapped(index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _selectedIndex == index 
-                        ? const Color(0xFF00687B)
-                        : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Chat icon gets a live unread badge; all others are plain
-                        if (index == _chatTabIndex)
-                          ValueListenableBuilder<int>(
-                            valueListenable: _chatUnreadNotifier,
-                            builder: (_, count, __) => Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Icon(
-                                  _getIconForIndex(index),
-                                  color: _selectedIndex == index ? Colors.white : const Color(0xFF5F6368),
-                                  size: 20,
-                                ),
-                                if (count > 0)
-                                  Positioned(
-                                    top: -5,
-                                    right: -7,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFEF4444),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                                      child: Text(
-                                        count > 99 ? '99+' : '$count',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w800,
-                                          height: 1.2,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          )
-                        else
-                          Icon(
-                            _getIconForIndex(index),
-                            color: _selectedIndex == index ? Colors.white : const Color(0xFF5F6368),
-                            size: 20,
-                          ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getLabelForIndex(index),
-                          style: GoogleFonts.poppins(
-                            color: _selectedIndex == index ? Colors.white : const Color(0xFF5F6368),
-                            fontSize: 10,
-                            fontWeight: _selectedIndex == index ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                          textAlign: TextAlign.center,
+
+  // ── Barre de navigation (design de l'APK du 15/10) ─────────────────────────
+  // Fond blanc, trait dégradé au-dessus de l'onglet actif, icône contour
+  // quand inactif / pleine quand actif, libellés courts.
+  static const _navActive = Color(0xFF0B2A44);
+  static const _navInactive = Color(0xFF8A9AAE);
+
+  Widget _buildBottomBar() {
+    final count = widget.auth.user?.role == 'coach' ? 5 : 6;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -2)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 72,
+          child: Row(
+            children: List.generate(count, (index) {
+              final selected = _selectedIndex == index;
+              final color = selected ? _navActive : _navInactive;
+              Widget icon = Icon(_getIconForIndex(index, selected), color: color, size: 25);
+              if (index == _chatTabIndex) {
+                icon = ValueListenableBuilder<int>(
+                  valueListenable: _chatUnreadNotifier,
+                  child: icon,
+                  builder: (_, unread, child) => Stack(clipBehavior: Clip.none, children: [
+                    child!,
+                    if (unread > 0)
+                      Positioned(
+                        top: -4,
+                        right: -8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                          decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+                          child: Text(unread > 99 ? '99+' : '$unread',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800, height: 1.2)),
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                  ]),
                 );
-              }).toList(),
-            ),
+              }
+              return Expanded(
+                child: InkWell(
+                  onTap: () => _onItemTapped(index),
+                  child: Column(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        height: 4,
+                        width: selected ? 48 : 0,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          gradient: const LinearGradient(colors: [Color(0xFF0B3D5C), Color(0xFF17B3D6)]),
+                        ),
+                      ),
+                      const Spacer(),
+                      icon,
+                      const SizedBox(height: 4),
+                      Text(
+                        _getLabelForIndex(index),
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 11.5,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                        ),
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
     );
   }
 
-  IconData _getIconForIndex(int index) {
+  IconData _getIconForIndex(int index, bool selected) {
     final isCoach = widget.auth.user?.role == 'coach';
-    
-    if (isCoach) {
-      switch (index) {
-        case 0: return Icons.person;
-        case 1: return Icons.group;
-        case 2: return Icons.fitness_center;
-        case 3: return Icons.sports_soccer;
-        case 4: return Icons.chat_bubble;
-        default: return Icons.person;
-      }
-    } else {
-      switch (index) {
-        case 0:
-          return Icons.person;
-        case 1:
-          return Icons.emoji_events;
-        case 2:
-          return Icons.sports_soccer;
-        case 3:
-          return Icons.fitness_center;
-        case 4:
-          return Icons.chat_bubble;
-        case 5:
-          return Icons.bar_chart;
-        default:
-          return Icons.person;
-      }
-    }
+    final icons = isCoach
+        ? const [
+            [Icons.person_outline, Icons.person],
+            [Icons.people_outline, Icons.people],
+            [Icons.fitness_center, Icons.fitness_center],
+            [Icons.emoji_events_outlined, Icons.emoji_events],
+            [Icons.chat_bubble_outline, Icons.chat_bubble],
+          ]
+        : const [
+            [Icons.person_outline, Icons.person],
+            [Icons.emoji_events_outlined, Icons.emoji_events],
+            [Icons.sports_soccer, Icons.sports_soccer],
+            [Icons.fitness_center, Icons.fitness_center],
+            [Icons.chat_bubble_outline, Icons.chat_bubble],
+            [Icons.bar_chart, Icons.bar_chart],
+          ];
+    return icons[index][selected ? 1 : 0];
   }
 
   String _getLabelForIndex(int index) {
     final isCoach = widget.auth.user?.role == 'coach';
-    
-    if (isCoach) {
-      switch (index) {
-        case 0: return 'Profil';
-        case 1: return 'Équipe';
-        case 2: return 'Entraînement';
-        case 3: return 'Tournois';
-        case 4: return 'Chat';
-        default: return 'Profil';
-      }
-    } else {
-      switch (index) {
-        case 0:
-          return 'Profil';
-        case 1:
-          return 'Récompenses';
-        case 2:
-          return 'Matchs';
-        case 3:
-          return 'Entraînements';
-        case 4:
-          return 'Chat';
-        case 5:
-          return 'Stats';
-        default:
-          return 'Profil';
-      }
-    }
+    const coach = ['Profil', 'Équipe', 'Entraîn.', 'Tournois', 'Chat'];
+    const player = ['Profil', 'Récomp.', 'Matchs', 'Entraîn.', 'Chat', 'Stats'];
+    return (isCoach ? coach : player)[index];
   }
 }

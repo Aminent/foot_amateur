@@ -57,7 +57,7 @@ const registerValidation = [
     .withMessage('Le mot de passe doit contenir au moins 6 caractères'),
   body('role')
     .optional()
-    .isIn(['admin', 'coach', 'joueur'])
+    .isIn(['coach', 'joueur'])
     .withMessage('Rôle invalide'),
   body('phone')
     .optional()
@@ -198,7 +198,7 @@ router.post('/register', registerLimiter, registerValidation, validate, async (r
       email,
       password: hashedPassword,
       name,
-      role: role || 'joueur'
+      role: role === 'coach' ? 'coach' : 'joueur' // jamais 'admin' via l'inscription publique
     });
 
     // Generate JWT

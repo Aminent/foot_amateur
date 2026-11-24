@@ -82,6 +82,7 @@ const playerStatsRoutes = require('./routes/playerStats');
 const chatRoutes = require('./routes/chatRoutes');
 const rewardRoutes = require('./routes/rewardRoutes');
 const scoutRoutes = require('./routes/scout');
+const refereeRoutes = require('./routes/referee');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -98,6 +99,7 @@ app.use('/api/player-stats', playerStatsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/rewards', rewardRoutes);
 app.use('/api/scouts', scoutRoutes);
+app.use('/api/referee', refereeRoutes);
 
 // Base API route
 app.get('/api', (req, res) => {
