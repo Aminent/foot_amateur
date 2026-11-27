@@ -1,5 +1,25 @@
-const { Team, Player, Tournament, User } = require('../models');
+const { Op } = require('sequelize');
+const { Team, Player, Tournament, User, Match } = require('../models');
 const { validationResult } = require('express-validator');
+
+// Returns an error message if the team cannot move from its tournament to `targetId` (null = leave).
+const tournamentMoveError = async (team, targetId) => {
+  if (String(targetId ?? '') === String(team.tournamentId ?? '')) return null;
+  if (team.tournamentId) {
+    const current = await Tournament.findByPk(team.tournamentId);
+    if (current?.status === 'active') {
+      return `L'équipe joue le tournoi « ${current.name} » en cours : elle ne peut pas le quitter avant la fin`;
+    }
+  }
+  if (targetId) {
+    const target = await Tournament.findByPk(targetId);
+    if (!target) return 'Tournoi introuvable';
+    if (target.status !== 'draft') return `Les inscriptions au tournoi « ${target.name} » sont closes`;
+    const count = await Team.count({ where: { tournamentId: target.id } });
+    if (target.maxTeams && count >= target.maxTeams) return `Le tournoi « ${target.name} » est complet (${target.maxTeams} équipes)`;
+  }
+  return null;
+};
 
 // GET /teams? tournamentId=
 const getAllTeams = async (req, res) => {
@@ -67,6 +87,8 @@ const createTeam = async (req, res) => {
     if (!tournamentId) {
       return res.status(400).json({ message: 'tournamentId requis' });
     }
+    const moveError = await tournamentMoveError({ tournamentId: null }, tournamentId);
+    if (moveError) return res.status(400).json({ message: moveError });
 
     const team = await Team.create({
       name,
@@ -100,7 +122,11 @@ const updateTeam = async (req, res) => {
       return res.status(404).json({ message: 'Équipe non trouvée' });
     }
 
-    const { name, shortName, description, logo, colors, foundedYear, homeGround, tournamentId, coachId } = req.body;
+    const { name, shortName, description, logo, colors, foundedYear, homeGround, tournamentId } = req.body;
+    const nextTournamentId = tournamentId !== undefined ? (tournamentId || null) : team.tournamentId;
+    const moveError = await tournamentMoveError(team, nextTournamentId);
+    if (moveError) return res.status(400).json({ message: moveError });
+
     await team.update({
       name: name ?? team.name,
       shortName: shortName ?? team.shortName,
@@ -109,8 +135,7 @@ const updateTeam = async (req, res) => {
       colors: colors ?? team.colors,
       foundedYear: foundedYear ?? team.foundedYear,
       homeGround: homeGround ?? team.homeGround,
-      tournamentId: tournamentId ?? team.tournamentId,
-      coachId: coachId ?? team.coachId
+      tournamentId: nextTournamentId,
     });
 
     res.json({ message: 'Équipe mise à jour avec succès', team });
@@ -129,6 +154,12 @@ const deleteTeam = async (req, res) => {
       return res.status(404).json({ message: 'Équipe non trouvée' });
     }
 
+    const matchCount = await Match.count({ where: { [Op.or]: [{ homeTeamId: team.id }, { awayTeamId: team.id }] } });
+    if (matchCount > 0) {
+      return res.status(400).json({ message: `Impossible de supprimer l'équipe : elle a ${matchCount} match(s) enregistré(s)` });
+    }
+    await Player.update({ teamId: null }, { where: { teamId: team.id } });
+    await User.update({ teamId: null }, { where: { teamId: team.id } });
     await team.destroy();
     res.json({ message: 'Équipe supprimée avec succès' });
   } catch (error) {

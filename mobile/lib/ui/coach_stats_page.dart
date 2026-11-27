@@ -816,15 +816,23 @@ class _EvolutionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build fake trend data from total value (no perMatchStats here)
+    // Courbe réelle : cumul match par match (faits saisis), 8 derniers matchs joués
     final total = _toInt(stats[selectedKey]);
-    final spots = List.generate(6, (i) {
-      final v = i < 5
-          ? (total * (i + 1) / 6.0 * (0.6 + math.Random(i * 7 + total).nextDouble() * 0.8))
-          : total.toDouble();
-      return FlSpot(i.toDouble(), v.clamp(0, total.toDouble() + 1));
-    });
-    final maxY = (total + 2).toDouble().clamp(3.0, double.infinity);
+    final perMatch = (stats['perMatchStats'] as List? ?? [])
+        .whereType<Map>()
+        .toList();
+    final supported = perMatch.isNotEmpty && perMatch.first.containsKey(selectedKey);
+    final spots = <FlSpot>[];
+    if (supported) {
+      var cum = 0;
+      final cumul = perMatch.map((m) => cum += _toInt(m[selectedKey])).toList();
+      final last = cumul.length > 8 ? cumul.sublist(cumul.length - 8) : cumul;
+      for (var i = 0; i < last.length; i++) {
+        spots.add(FlSpot(i.toDouble(), last[i].toDouble()));
+      }
+    }
+    final maxY = ((spots.isEmpty ? total : spots.last.y.toInt()) + 2).toDouble().clamp(3.0, double.infinity);
+    final firstMatchNo = supported && perMatch.length > 8 ? perMatch.length - 8 : 0;
 
     return Container(
       width: double.infinity,
@@ -883,6 +891,15 @@ class _EvolutionSection extends StatelessWidget {
 
         const SizedBox(height: 10),
 
+        if (spots.isEmpty)
+          SizedBox(
+            height: 60,
+            child: Center(child: Text(
+              perMatch.isEmpty ? "Aucun match joué pour l'instant" : 'Pas de détail par match pour cette statistique',
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            )),
+          )
+        else
         SizedBox(
           height: 100,
           child: LineChart(LineChartData(
@@ -897,13 +914,13 @@ class _EvolutionSection extends StatelessWidget {
               bottomTitles: AxisTitles(sideTitles: SideTitles(
                 showTitles: true, reservedSize: 20, interval: 1,
                 getTitlesWidget: (v, m) => SideTitleWidget(axisSide: m.axisSide,
-                  child: Text('M${v.toInt() + 1}',
+                  child: Text('M${firstMatchNo + v.toInt() + 1}',
                       style: TextStyle(fontSize: 9, color: Colors.grey[400]))),
               )),
               leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
-            minX: 0, maxX: 5, minY: 0, maxY: maxY,
+            minX: 0, maxX: spots.length > 1 ? (spots.length - 1).toDouble() : 1, minY: 0, maxY: maxY,
             lineBarsData: [LineChartBarData(
               spots: spots,
               isCurved: true,

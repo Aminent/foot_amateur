@@ -39,7 +39,7 @@ const Match = sequelize.define('Match', {
     allowNull: true
   },
   status: {
-    type: DataTypes.ENUM('scheduled', 'in_progress', 'completed', 'cancelled', 'postponed'),
+    type: DataTypes.ENUM('scheduled', 'in_progress', 'half_time', 'completed', 'cancelled', 'postponed'),
     defaultValue: 'scheduled'
   },
   homeTeamScore: {

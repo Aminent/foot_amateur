@@ -140,4 +140,65 @@ router.put('/me/fcm-token', auth, requireReferee, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Admin : gestion des arbitres (page « Arbitres » de l'admin) ─────────────
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const refereePublic = (u) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone, isActive: u.isActive });
+
+router.get('/', auth, requireAdmin, async (req, res) => {
+  try {
+    const referees = await User.findAll({
+      where: { role: 'arbitre' },
+      attributes: ['id', 'name', 'email', 'phone', 'isActive', 'createdAt'],
+      include: [{ model: RefereeMission, as: 'refereeMissions', attributes: ['id', 'matchId', 'role', 'status'], required: false }],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json({ referees: referees.map(r => ({ ...refereePublic(r), missions: r.refereeMissions || [] })) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/', auth, requireAdmin, async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const phone = req.body.phone || null;
+    if (name.length < 2) return res.status(400).json({ message: 'Nom requis' });
+    if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ message: 'Email invalide' });
+    if (await User.findOne({ where: { email } })) return res.status(409).json({ message: 'Email déjà utilisé' });
+    // L'arbitre n'a plus d'app : mot de passe aléatoire, inutilisable.
+    const password = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
+    const referee = await User.create({ name, email, phone, password, role: 'arbitre', isActive: true });
+    res.status(201).json({ referee: refereePublic(referee) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put('/:id', auth, requireAdmin, async (req, res) => {
+  try {
+    const referee = await User.findOne({ where: { id: req.params.id, role: 'arbitre' } });
+    if (!referee) return res.status(404).json({ message: 'Arbitre introuvable' });
+    const updates = {};
+    for (const k of ['name', 'phone', 'isActive']) if (req.body[k] !== undefined) updates[k] = req.body[k];
+    await referee.update(updates);
+    res.json({ referee: refereePublic(referee) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.delete('/:id', auth, requireAdmin, async (req, res) => {
+  try {
+    const referee = await User.findOne({ where: { id: req.params.id, role: 'arbitre' } });
+    if (!referee) return res.status(404).json({ message: 'Arbitre introuvable' });
+    await RefereeMission.destroy({ where: { refereeId: referee.id } });
+    await referee.destroy();
+    res.json({ message: 'Arbitre supprimé' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

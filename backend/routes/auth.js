@@ -147,7 +147,7 @@ router.post('/refresh', refreshLimiter, async (req, res) => {
     const user = await User.findByPk(decoded.userId, {
       attributes: ['id', 'email', 'name', 'role', 'isActive'],
     });
-    if (!user || user.isActive === false) {
+    if (!user || user.isActive === false || user.role === 'arbitre') {
       return res.status(401).json({ message: 'Compte introuvable ou désactivé.' });
     }
 
@@ -248,6 +248,11 @@ router.post('/login', loginLimiter, async (req, res) => {
     
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+    }
+
+    // Les arbitres n'ont plus d'app : ils sont seulement choisis par l'admin pour les matchs.
+    if (user.role === 'arbitre') {
+      return res.status(403).json({ message: "Les arbitres n'ont pas d'espace de connexion" });
     }
 
     if (!process.env.JWT_SECRET) {

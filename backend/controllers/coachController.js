@@ -1,4 +1,6 @@
 const { User, Team, Player, Match, Tournament, PlayerStat, TournamentApplication } = require('../models');
+const { resultFor } = require('../services/statsService');
+const { computeStandings } = require('../services/tournamentService');
 const { Op } = require('sequelize');
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
@@ -274,13 +276,8 @@ const getMyTeamMatches = async (req, res) => {
       const opponent = isHome ? m.awayTeam : m.homeTeam;
       const goalsFor = isHome ? (m.homeTeamScore || 0) : (m.awayTeamScore || 0);
       const goalsAgainst = isHome ? (m.awayTeamScore || 0) : (m.homeTeamScore || 0);
-      let result = 'Match nul';
-      if (m.status === 'completed') {
-        if (goalsFor > goalsAgainst) result = 'Victoire';
-        else if (goalsFor < goalsAgainst) result = 'Défaite';
-      } else {
-        result = 'Programmé';
-      }
+      const r = resultFor(m, teamId);
+      const result = m.status !== 'completed' ? 'Programmé' : r === 'V' ? 'Victoire' : r === 'D' ? 'Défaite' : 'Match nul';
       return {
         id: m.id,
         date: m.date,
@@ -356,28 +353,9 @@ const getMyTournament = async (req, res) => {
     // ── All teams in this tournament (for standings) ─────────────────────────
     const allTeams = await Team.findAll({ where: { tournamentId: tournament.id }, attributes: ['id', 'name'] });
 
-    // ── Compute standings ────────────────────────────────────────────────────
-    const rows = {};
-    allTeams.forEach(t => {
-      rows[t.id] = { id: t.id, name: t.name, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
-    });
-
-    allMatches.filter(m => m.status === 'completed').forEach(m => {
-      const h = rows[m.homeTeamId];
-      const a = rows[m.awayTeamId];
-      if (!h || !a) return;
-      const hg = m.homeTeamScore ?? 0;
-      const ag = m.awayTeamScore ?? 0;
-      h.P++; h.GF += hg; h.GA += ag; h.GD += hg - ag;
-      a.P++; a.GF += ag; a.GA += hg; a.GD += ag - hg;
-      if (hg > ag) { h.W++; h.Pts += 3; a.L++; }
-      else if (hg < ag) { a.W++; a.Pts += 3; h.L++; }
-      else { h.D++; h.Pts++; a.D++; a.Pts++; }
-    });
-
-    const standings = Object.values(rows)
-      .sort((a, b) => b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF || a.name.localeCompare(b.name))
-      .map((r, i) => ({ ...r, position: i + 1, isMyTeam: r.id === teamId }));
+    // ── Classement : même calcul que la page tournoi (services/tournamentService) ──
+    const standings = (await computeStandings(tournament, allTeams, allMatches.filter(m => m.status === 'completed')))
+      .map(r => ({ ...r, isMyTeam: r.id === teamId }));
 
     const myPosition = standings.findIndex(r => r.id === teamId) + 1;
 
@@ -389,10 +367,7 @@ const getMyTournament = async (req, res) => {
         const opponent = isHome ? m.awayTeam : m.homeTeam;
         const gf = isHome ? (m.homeTeamScore ?? 0) : (m.awayTeamScore ?? 0);
         const ga = isHome ? (m.awayTeamScore ?? 0) : (m.homeTeamScore ?? 0);
-        let result = null;
-        if (m.status === 'completed') {
-          result = gf > ga ? 'V' : gf < ga ? 'D' : 'N';
-        }
+        const result = m.status === 'completed' ? resultFor(m, teamId) : null;
         return {
           id: m.id,
           date: m.date,
@@ -457,7 +432,7 @@ const getAvailableTournamentsForCoach = async (req, res) => {
 
     const tournaments = await Tournament.findAll({
       where: {
-        status: 'active',
+        status: 'draft', // inscriptions ouvertes tant que le tableau n'est pas généré
         ...(appliedIds.length ? { id: { [Op.notIn]: appliedIds } } : {}),
       },
       attributes: ['id', 'name', 'format', 'startDate', 'endDate', 'location', 'maxTeams', 'description'],

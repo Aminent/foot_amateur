@@ -264,7 +264,7 @@ const TeamDetails = () => {
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'draft': return 'Brouillon';
+      case 'draft': return 'Inscriptions ouvertes';
       case 'active': return 'Actif';
       case 'completed': return 'Terminé';
       case 'cancelled': return 'Annulé';

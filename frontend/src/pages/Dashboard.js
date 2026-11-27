@@ -117,7 +117,7 @@ const Dashboard = () => {
       case 'active':
         return 'Actif';
       case 'draft':
-        return 'Brouillon';
+        return 'Inscriptions ouvertes';
       case 'completed':
         return 'Terminé';
       case 'cancelled':

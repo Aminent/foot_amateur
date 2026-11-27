@@ -43,7 +43,7 @@ const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 // POSITION_MAP replaced by shared POSITION_CONFIG (imported above)
 
 const STATUS_MAP = {
-  draft:     { label: 'Brouillon', color: 'default' },
+  draft:     { label: 'Inscriptions ouvertes', color: 'default' },
   active:    { label: 'Actif',     color: 'success' },
   completed: { label: 'Terminé',   color: 'info' },
   cancelled: { label: 'Annulé',    color: 'error' },
@@ -54,6 +54,9 @@ const FORMAT_MAP = {
   knockout:             'Élimination',
   group_then_knockout:  'Poules + Élim.',
 };
+
+// Viennent des faits de match (calculés par le serveur) : affichés, pas modifiables.
+const DERIVED_STATS = ['goals', 'assists', 'yellowCards', 'redCards', 'minutesPlayed', 'cleanSheets', 'goalsConceded'];
 
 const getInitials = (name = '') =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
@@ -302,6 +305,12 @@ const AdminDashboard = () => {
 
   const showSuccess = (msg) => setSnackbar({ open: true, message: msg, severity: 'success' });
   const showError   = (msg) => setSnackbar({ open: true, message: msg, severity: 'error' });
+  // arbitres
+  const [referees, setReferees] = useState([]);
+  const emptyRefereeForm = { name: '', email: '', phone: '' };
+  const [refereeForm, setRefereeForm] = useState(emptyRefereeForm);
+  const [refereeDialog, setRefereeDialog] = useState(false);
+  const [editingReferee, setEditingReferee] = useState(null);
   const openConfirm = (title, message, onConfirm) => setConfirmDlg({ open: true, title, message, onConfirm });
   const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false }));
 
@@ -311,7 +320,7 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    try { await Promise.all([fetchTournaments(), fetchTeams(), fetchPlayers(), fetchCoaches(), fetchMatches(), fetchApplications()]); }
+    try { await Promise.all([fetchTournaments(), fetchTeams(), fetchPlayers(), fetchCoaches(), fetchMatches(), fetchApplications(), fetchReferees()]); }
     catch { showError('Erreur lors du chargement des données'); }
     finally { setLoading(false); }
   };
@@ -340,6 +349,32 @@ const AdminDashboard = () => {
     const d = await r.json();
     setCoaches(d.coaches || d || []);
   };
+  const fetchReferees = async () => {
+    try {
+      const r = await fetch(`${API}/referee`, { headers: authHeaders() });
+      if (r.ok) { const d = await r.json(); setReferees(d.referees || []); }
+    } catch { setReferees([]); }
+  };
+  const handleSaveReferee = async () => {
+    const isEdit = !!editingReferee;
+    const url  = isEdit ? `${API}/referee/${editingReferee.id}` : `${API}/referee`;
+    const body = isEdit
+      ? { name: refereeForm.name, phone: refereeForm.phone }
+      : { name: refereeForm.name, email: refereeForm.email, phone: refereeForm.phone };
+    const r = await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    if (r.ok) {
+      setRefereeDialog(false); setEditingReferee(null); setRefereeForm(emptyRefereeForm);
+      await fetchReferees(); showSuccess(isEdit ? 'Arbitre modifié' : 'Arbitre créé');
+    } else { const e = await r.json(); showError(e.message || 'Erreur'); }
+  };
+
+  const handleDeleteReferee = async (ref) => {
+    const r = await fetch(`${API}/referee/${ref.id}`, { method: 'DELETE', headers: authHeaders() });
+    if (r.ok) { await fetchReferees(); showSuccess('Arbitre supprimé'); }
+    else { const e = await r.json(); showError(e.message || 'Erreur suppression'); }
+  };
+
+
   const fetchMatches = async () => {
     try {
       const r = await fetch(`${API}/matches`, { headers: authHeaders() });
@@ -691,6 +726,7 @@ const AdminDashboard = () => {
     { id: 5, label: 'Calendrier' },
     { id: 6, label: 'Matchs' },
     { id: 7, label: 'Candidatures' },
+    { id: 8, label: 'Arbitres' },
   ];
 
   const kpiCards = [
@@ -1166,7 +1202,7 @@ const AdminDashboard = () => {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Avatar sx={{ width: 26, height: 26, bgcolor: '#dbeafe', color: '#1e40af', fontSize: '0.65rem', fontWeight: 700 }}>{getInitials(m.homeTeam?.name)}</Avatar>
                                 <Typography sx={{ fontWeight: m.winnerTeamId === m.homeTeamId ? 700 : 400, fontSize: '0.875rem', color: m.winnerTeamId === m.homeTeamId ? '#10b981' : 'text.primary' }}>
-                                  {m.homeTeam?.name || '?'}
+                                  {m.homeTeam?.name || '?'}{m.status === 'completed' && m.winnerTeamId === m.homeTeamId && m.homeTeamScore === m.awayTeamScore ? ' (t.a.b.)' : ''}
                                 </Typography>
                               </Box>
                             </TableCell>
@@ -1175,7 +1211,7 @@ const AdminDashboard = () => {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Avatar sx={{ width: 26, height: 26, bgcolor: '#fee2e2', color: '#991b1b', fontSize: '0.65rem', fontWeight: 700 }}>{getInitials(m.awayTeam?.name)}</Avatar>
                                 <Typography sx={{ fontWeight: m.winnerTeamId === m.awayTeamId ? 700 : 400, fontSize: '0.875rem', color: m.winnerTeamId === m.awayTeamId ? '#10b981' : 'text.primary' }}>
-                                  {m.awayTeam?.name || '?'}
+                                  {m.awayTeam?.name || '?'}{m.status === 'completed' && m.winnerTeamId === m.awayTeamId && m.homeTeamScore === m.awayTeamScore ? ' (t.a.b.)' : ''}
                                 </Typography>
                               </Box>
                             </TableCell>
@@ -1340,7 +1376,76 @@ const AdminDashboard = () => {
     </Box>
   );
 
-  const sectionComponents = [TournamentsSection, TeamsSection, PlayersSection, CoachesSection, StatsSection, CalendarSection, MatchesSection, ApplicationsSection];
+  const ArbitresSection = () => (
+    <SectionCard
+      title={`${referees.length} arbitre${referees.length !== 1 ? 's' : ''}`}
+      action={
+        <Button variant="contained" size="small" startIcon={<AddIcon />}
+          onClick={() => { setEditingReferee(null); setRefereeForm(emptyRefereeForm); setRefereeDialog(true); }}>
+          Nouveau
+        </Button>
+      }
+    >
+      <TableContainer>
+        <Table>
+          <TableHead2 cols={[
+            { label: 'Arbitre' },
+            { label: 'Email' },
+            { label: 'Téléphone' },
+            { label: 'Missions' },
+            { label: 'Statut' },
+            { label: 'Actions', align: 'right' },
+          ]} />
+          <TableBody>
+            {referees.length === 0
+              ? <EmptyRow colSpan={6} message="Aucun arbitre créé" />
+              : referees.map(ref => (
+                <TableRow key={ref.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 32, height: 32, bgcolor: '#fff7ed', color: '#c2410c', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(ref.name)}</Avatar>
+                      <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>{ref.name}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{ref.email}</TableCell>
+                  <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{ref.phone || '—'}</TableCell>
+                  <TableCell sx={{ fontSize: '0.875rem' }}>
+                    <Chip label={`${(ref.missions || []).length} match${(ref.missions || []).length !== 1 ? 's' : ''}`}
+                      size="small" sx={{ fontSize: '0.75rem', height: 22 }} />
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={ref.isActive ? 'Actif' : 'Inactif'} size="small"
+                      sx={{ fontSize: '0.72rem', height: 20,
+                        bgcolor: ref.isActive ? '#f0fdf4' : '#fef2f2',
+                        color: ref.isActive ? '#166534' : '#dc2626' }} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
+                      <Tooltip title="Modifier">
+                        <IconButton size="small"
+                          onClick={() => { setEditingReferee(ref); setRefereeForm({ name: ref.name, email: ref.email, phone: ref.phone || '' }); setRefereeDialog(true); }}
+                          sx={{ color: 'text.secondary', '&:hover': { color: '#3b82f6' } }}>
+                          <EditIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Supprimer">
+                        <IconButton size="small"
+                          onClick={() => openConfirm('Supprimer l\'arbitre', `Supprimer "${ref.name}" et toutes ses assignations ?`, () => handleDeleteReferee(ref))}
+                          sx={{ color: 'text.secondary', '&:hover': { color: '#dc2626' } }}>
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </SectionCard>
+  );
+
+  const sectionComponents = [TournamentsSection, TeamsSection, PlayersSection, CoachesSection, StatsSection, CalendarSection, MatchesSection, ApplicationsSection, ArbitresSection];
   const ActiveSection = sectionComponents[activeSection];
 
   // ── dialogs shared style ─────────────────────────────────────────────────────
@@ -1374,6 +1479,21 @@ const AdminDashboard = () => {
       { label: 'Fautes', color: '#92400e', fields: [['Fautes commises', 'foulsCommitted'], ['Fautes subies', 'foulsSuffered']] },
       { label: 'Discipline & Temps', color: '#6b21a8', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
     ];
+  };
+
+  // Liste déroulante des arbitres (le nom est enregistré sur le match)
+  const refereeSelect = (value, onChange, size) => {
+    const names = referees.filter(r => r.isActive !== false).map(r => r.name);
+    if (value && !names.includes(value)) names.unshift(value);
+    return (
+      <FormControl fullWidth size={size}>
+        <InputLabel>Arbitre</InputLabel>
+        <Select label="Arbitre" value={value || ''} onChange={e => onChange(e.target.value)}>
+          <MenuItem value=""><em>Aucun</em></MenuItem>
+          {names.map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+        </Select>
+      </FormControl>
+    );
   };
 
   const dlgSx = { '& .MuiDialog-paper': { borderRadius: 2.5 } };
@@ -1464,7 +1584,7 @@ const AdminDashboard = () => {
               <FormControl fullWidth>
                 <InputLabel>Statut</InputLabel>
                 <Select value={tournamentForm.status} onChange={e => setTournamentForm(f => ({ ...f, status: e.target.value }))}>
-                  <MenuItem value="draft">Brouillon</MenuItem>
+                  <MenuItem value="draft">Inscriptions ouvertes</MenuItem>
                   <MenuItem value="active">Actif</MenuItem>
                   <MenuItem value="completed">Terminé</MenuItem>
                   <MenuItem value="cancelled">Annulé</MenuItem>
@@ -1654,7 +1774,9 @@ const AdminDashboard = () => {
               <Grid container spacing={2}>
                 {section.fields.map(([label, key]) => (
                   <Grid item xs={12} sm={6} md={4} key={key}>
-                    {numField(label, key, statsForm, setStatsForm)}
+                    {DERIVED_STATS.includes(key)
+                      ? <TextField fullWidth size="small" label={label} value={statsForm[key] ?? 0} disabled helperText="Calculé depuis les faits de match" />
+                      : numField(label, key, statsForm, setStatsForm)}
                   </Grid>
                 ))}
               </Grid>
@@ -1716,7 +1838,7 @@ const AdminDashboard = () => {
               <TextField fullWidth type="number" label="Tour n°" value={matchForm.roundNumber} onChange={e => setMatchForm(f => ({ ...f, roundNumber: e.target.value }))} inputProps={{ min: 1 }} />
             </Grid>
             <Grid item xs={12}>
-              <TextField fullWidth label="Arbitre" value={matchForm.referee} onChange={e => setMatchForm(f => ({ ...f, referee: e.target.value }))} />
+              {refereeSelect(matchForm.referee, v => setMatchForm(f => ({ ...f, referee: v })))}
             </Grid>
             <Grid item xs={12}>
               <TextField fullWidth multiline rows={2} label="Notes" value={matchForm.notes} onChange={e => setMatchForm(f => ({ ...f, notes: e.target.value }))} />
@@ -1783,7 +1905,7 @@ const AdminDashboard = () => {
               <TextField fullWidth size="small" type="number" label="Spectateurs" value={resultsForm.attendance} onChange={e => setResultsForm(f => ({ ...f, attendance: e.target.value }))} inputProps={{ min: 0 }} />
             </Grid>
             <Grid item xs={12}>
-              <TextField fullWidth size="small" label="Arbitre" value={resultsForm.referee} onChange={e => setResultsForm(f => ({ ...f, referee: e.target.value }))} />
+              {refereeSelect(resultsForm.referee, v => setResultsForm(f => ({ ...f, referee: v })), "small")}
             </Grid>
             <Grid item xs={12}>
               <TextField fullWidth size="small" multiline rows={2} label="Notes" value={resultsForm.notes} onChange={e => setResultsForm(f => ({ ...f, notes: e.target.value }))} />
@@ -1974,6 +2096,32 @@ const AdminDashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* ── Create / Edit Referee Dialog ─────────────────────────────────── */}
+      <Dialog open={refereeDialog} onClose={() => { setRefereeDialog(false); setEditingReferee(null); }} maxWidth="xs" fullWidth sx={dlgSx}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>
+          {editingReferee ? 'Modifier l\'arbitre' : 'Nouvel arbitre'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: '12px !important' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField label="Nom" fullWidth size="small" value={refereeForm.name}
+              onChange={e => setRefereeForm(f => ({ ...f, name: e.target.value }))} required />
+            {!editingReferee && (
+              <TextField label="Email" fullWidth size="small" type="email" value={refereeForm.email}
+                onChange={e => setRefereeForm(f => ({ ...f, email: e.target.value }))} required />
+            )}
+            <TextField label="Téléphone" fullWidth size="small" value={refereeForm.phone}
+              onChange={e => setRefereeForm(f => ({ ...f, phone: e.target.value }))} />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setRefereeDialog(false); setEditingReferee(null); }}>Annuler</Button>
+          <Button variant="contained" onClick={handleSaveReferee}
+            disabled={!refereeForm.name || (!editingReferee && !refereeForm.email)}>
+            {editingReferee ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 };

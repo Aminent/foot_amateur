@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../state/auth_controller.dart';
 import 'login_page.dart';
 import 'main_navigation_wrapper.dart';
-import 'referee_home_page.dart';
 
 class HomeRouter extends StatelessWidget {
   final AuthController auth;
@@ -27,9 +26,6 @@ class HomeRouter extends StatelessWidget {
         final role = auth.user!.role;
         if (role == 'coach' || role == 'joueur') {
           return MainNavigationWrapper(auth: auth);
-        }
-        if (role == 'arbitre') {
-          return RefereeShell(auth: auth);
         }
 
         // If someone logs in as admin on mobile, show a simple message.

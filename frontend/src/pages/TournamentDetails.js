@@ -35,7 +35,7 @@ const WS  = process.env.REACT_APP_API_URL
 
 const fmt = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : 'Non défini';
 
-const STATUS_LABEL = { draft:'Brouillon', active:'Actif', completed:'Terminé', cancelled:'Annulé' };
+const STATUS_LABEL = { draft:'Inscriptions ouvertes', active:'Actif', completed:'Terminé', cancelled:'Annulé' };
 const STATUS_COLOR = { draft:'default', active:'success', completed:'info', cancelled:'error' };
 const FORMAT_LABEL = { league:'Championnat', knockout:'Élimination directe', group_then_knockout:'Poules + élimination' };
 
@@ -75,6 +75,13 @@ const computeStandings = (matches, teams) => {
   );
 };
 
+/* ─── winner (même règle que le serveur : vainqueur enregistré, tirs au but compris) ─── */
+const winnerSide = (m) => {
+  if (m.status !== 'completed') return null;
+  if (m.winnerTeamId != null) return m.winnerTeamId === m.homeTeamId ? 'home' : m.winnerTeamId === m.awayTeamId ? 'away' : null;
+  return m.homeTeamScore > m.awayTeamScore ? 'home' : m.awayTeamScore > m.homeTeamScore ? 'away' : null;
+};
+
 /* ─── top scorers computation ─────────────────────────────────────────────── */
 
 const computeScorers = (matches) => {
@@ -86,7 +93,8 @@ const computeScorers = (matches) => {
       const team = ev.isHomeTeam
         ? (m.homeTeam?.name || '?')
         : (m.awayTeam?.name || '?');
-      const key = `${name}__${team}`;
+      // Même identité que les statistiques joueur : la fiche joueur ; le nom tapé seulement pour les anciens faits
+      const key = ev.relatedPlayerId ? `id_${ev.relatedPlayerId}` : `${name}__${team}`;
       if (!map[key]) map[key] = { name, team, goals: 0 };
       map[key].goals++;
     });
@@ -206,7 +214,7 @@ const TopScorers = ({ scorers }) => {
 };
 
 /* Visual bracket — one column per round */
-const VisualBracket = ({ bracketRounds, openSchedule, openScore }) => {
+const VisualBracket = ({ bracketRounds }) => {
   const roundKeys = Object.keys(bracketRounds).map(Number).sort((a, b) => a - b);
   const total = roundKeys.length;
   if (!total) return (
@@ -234,8 +242,12 @@ const VisualBracket = ({ bracketRounds, openSchedule, openScore }) => {
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column',
                 justifyContent: 'space-around', px: 1, gap: 2 }}>
                 {matches.map((m) => {
-                  const hWin = m.status === 'completed' && m.homeTeamScore > m.awayTeamScore;
-                  const aWin = m.status === 'completed' && m.awayTeamScore > m.homeTeamScore;
+                  // Même source que la section Matchs : le vainqueur enregistré (tirs au but compris)
+                  const done = m.status === 'completed';
+                  const hWin = done && (m.winnerTeamId != null ? m.winnerTeamId === m.homeTeamId : m.homeTeamScore > m.awayTeamScore);
+                  const aWin = done && (m.winnerTeamId != null ? m.winnerTeamId === m.awayTeamId : m.awayTeamScore > m.homeTeamScore);
+                  const onPens = done && m.homeTeamScore === m.awayTeamScore && (hWin || aWin);
+                  const live = m.status === 'in_progress' || m.status === 'half_time';
                   return (
                     <Box key={m.id} sx={{ bgcolor: 'white', border: '1px solid #e2e8f0',
                       borderRadius: 1.5, overflow: 'hidden',
@@ -246,11 +258,11 @@ const VisualBracket = ({ bracketRounds, openSchedule, openScore }) => {
                         borderBottom: '1px solid #f1f5f9' }}>
                         <Typography fontSize={12} sx={{ flex: 1, fontWeight: hWin ? 700 : 400,
                           color: hWin ? '#15803d' : '#1e293b' }} noWrap>
-                          {m.homeTeam?.name || 'En attente...'}
+                          {m.homeTeam?.name || 'En attente...'}{hWin && onPens ? ' (t.a.b.)' : ''}
                         </Typography>
                         <Box sx={{ ml: 1, minWidth: 22, textAlign: 'right',
                           fontWeight: 800, fontSize: 14, color: hWin ? '#15803d' : '#475569' }}>
-                          {m.status === 'completed' || m.status === 'in_progress' ? m.homeTeamScore ?? '-' : '–'}
+                          {done || live ? m.homeTeamScore ?? '-' : '–'}
                         </Box>
                       </Box>
                       {/* Away team */}
@@ -258,27 +270,20 @@ const VisualBracket = ({ bracketRounds, openSchedule, openScore }) => {
                         bgcolor: aWin ? '#f0fdf4' : 'white' }}>
                         <Typography fontSize={12} sx={{ flex: 1, fontWeight: aWin ? 700 : 400,
                           color: aWin ? '#15803d' : '#1e293b' }} noWrap>
-                          {m.awayTeam?.name || 'En attente...'}
+                          {m.awayTeam?.name || 'En attente...'}{aWin && onPens ? ' (t.a.b.)' : ''}
                         </Typography>
                         <Box sx={{ ml: 1, minWidth: 22, textAlign: 'right',
                           fontWeight: 800, fontSize: 14, color: aWin ? '#15803d' : '#475569' }}>
-                          {m.status === 'completed' || m.status === 'in_progress' ? m.awayTeamScore ?? '-' : '–'}
+                          {done || live ? m.awayTeamScore ?? '-' : '–'}
                         </Box>
                       </Box>
-                      {/* Action row */}
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5,
-                        px: 1, py: 0.6, bgcolor: '#f8fafc', borderTop: '1px solid #f1f5f9' }}>
-                        {m.date && (
-                          <Typography fontSize={10} color="text.secondary" sx={{ flex: 1, alignSelf: 'center' }}>
-                            {fmt(m.date)}
-                          </Typography>
-                        )}
-                        <Button size="small" variant="outlined"
-                          sx={{ fontSize: 10, py: 0.2, px: 1, minWidth: 0 }}
-                          onClick={() => openSchedule(m)}>⏱</Button>
-                        <Button size="small" variant="contained"
-                          sx={{ fontSize: 10, py: 0.2, px: 1, minWidth: 0 }}
-                          onClick={() => openScore(m)}>Score</Button>
+                      {/* Infos (affichage seul : le résultat se saisit dans la section Matchs) */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 0.5,
+                        px: 1.25, py: 0.6, bgcolor: '#f8fafc', borderTop: '1px solid #f1f5f9' }}>
+                        <Typography fontSize={10} color="text.secondary">{m.date ? fmt(m.date) : 'Date à fixer'}</Typography>
+                        <Typography fontSize={10} fontWeight={700} color={done ? '#15803d' : live ? '#dc2626' : 'text.secondary'}>
+                          {done ? 'Terminé' : live ? 'En direct' : 'À venir'}
+                        </Typography>
                       </Box>
                     </Box>
                   );
@@ -313,8 +318,6 @@ const TournamentDetails = () => {
 
   const [addTeamDialog, setAddTeamDialog] = useState(false);
   const [selectedTeam, setSelectedTeam]   = useState('');
-  const [scheduleDialog, setScheduleDialog] = useState({ open: false, match: null, date: '', location: '' });
-  const [scoreDialog, setScoreDialog]       = useState({ open: false, match: null, home: '', away: '' });
 
   /* ── fetch ── */
   const fetchAll = async () => {
@@ -397,38 +400,6 @@ const TournamentDetails = () => {
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || 'Erreur'); }
       await fetchBracket();
-    } catch (e) { setError(e.message); }
-  };
-
-  const openSchedule = (m) =>
-    setScheduleDialog({ open: true, match: m, date: m.date ? new Date(m.date).toISOString().slice(0, 16) : '', location: m.location || '' });
-
-  const saveSchedule = async () => {
-    try {
-      const { match, date, location } = scheduleDialog;
-      const res = await fetch(`${API}/matches/${match.id}/schedule`, {
-        method: 'PUT', headers: authHeaders(),
-        body: JSON.stringify({ date: date ? new Date(date).toISOString() : undefined, location, status: 'scheduled' }),
-      });
-      if (!res.ok) throw new Error('Erreur lors de la planification');
-      setScheduleDialog({ open: false, match: null, date: '', location: '' });
-      await Promise.all([fetchBracket(), fetchAll()]);
-    } catch (e) { setError(e.message); }
-  };
-
-  const openScore = (m) =>
-    setScoreDialog({ open: true, match: m, home: m.homeTeamScore ?? '', away: m.awayTeamScore ?? '' });
-
-  const saveScore = async () => {
-    try {
-      const { match, home, away } = scoreDialog;
-      const res = await fetch(`${API}/matches/${match.id}/score`, {
-        method: 'PUT', headers: authHeaders(),
-        body: JSON.stringify({ homeTeamScore: Number(home), awayTeamScore: Number(away), status: 'completed' }),
-      });
-      if (!res.ok) throw new Error("Erreur lors de l'enregistrement du score");
-      setScoreDialog({ open: false, match: null, home: '', away: '' });
-      await Promise.all([fetchBracket(), fetchAll()]);
     } catch (e) { setError(e.message); }
   };
 
@@ -874,8 +845,8 @@ const TournamentDetails = () => {
                   <Typography variant="h6" fontWeight={700} mb={2}>⚽ Résultats ({completedMatches}/{matches.length} matchs)</Typography>
                   {matches.map(m => {
                     const done = m.status === 'completed';
-                    const hWin = done && m.homeTeamScore > m.awayTeamScore;
-                    const aWin = done && m.awayTeamScore > m.homeTeamScore;
+                    const hWin = winnerSide(m) === 'home';
+                    const aWin = winnerSide(m) === 'away';
                     return (
                       <Paper key={m.id} variant="outlined" sx={{ p: 1.5, mb: 1, display: 'flex',
                         alignItems: 'center', gap: 1.5 }}>
@@ -924,9 +895,11 @@ const TournamentDetails = () => {
                 <Typography variant="h6" fontWeight={700}>🏆 Tableau d'élimination</Typography>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   {bracketLoading && <Chip label="Actualisation…" size="small" />}
-                  <Button variant="outlined" startIcon={<BracketIcon />} onClick={handleGenerateBracket}>
-                    Générer / Réinitialiser
-                  </Button>
+                  {!matches.some(m => ['completed', 'in_progress', 'half_time'].includes(m.status)) && (
+                    <Button variant="outlined" startIcon={<BracketIcon />} onClick={handleGenerateBracket}>
+                      Générer / Réinitialiser
+                    </Button>
+                  )}
                   <Button variant="outlined" startIcon={<AssessmentIcon />} onClick={() => window.print()}>
                     Imprimer
                   </Button>
@@ -938,7 +911,7 @@ const TournamentDetails = () => {
                   Il faut au moins 2 équipes pour générer le tableau.
                 </Alert>
               ) : (
-                <VisualBracket bracketRounds={bracketRounds} openSchedule={openSchedule} openScore={openScore} />
+                <VisualBracket bracketRounds={bracketRounds} />
               )}
             </Box>
           )}
@@ -1182,9 +1155,9 @@ const TournamentDetails = () => {
                       <Box sx={{ p: 2 }}>
                         <Grid container spacing={1.5}>
                           {matches.filter(m => m.status === 'completed').slice(-6).reverse().map(m => {
-                            const hWin = m.homeTeamScore > m.awayTeamScore;
-                            const aWin = m.awayTeamScore > m.homeTeamScore;
-                            const draw = m.homeTeamScore === m.awayTeamScore;
+                            const hWin = winnerSide(m) === 'home';
+                            const aWin = winnerSide(m) === 'away';
+                            const draw = !hWin && !aWin;
                             return (
                               <Grid item xs={12} sm={6} md={4} key={m.id}>
                                 <Box sx={{
@@ -1262,58 +1235,6 @@ const TournamentDetails = () => {
         </DialogActions>
       </Dialog>
 
-      {/* ── Schedule Dialog ── */}
-      <Dialog open={scheduleDialog.open}
-        onClose={() => setScheduleDialog({ open: false, match: null, date: '', location: '' })}
-        maxWidth="xs" fullWidth>
-        <DialogTitle>Planifier le match</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              {scheduleDialog.match?.homeTeam?.name} vs {scheduleDialog.match?.awayTeam?.name}
-            </Typography>
-            <input type="datetime-local" value={scheduleDialog.date}
-              onChange={(e) => setScheduleDialog(s => ({ ...s, date: e.target.value }))}
-              style={{ padding: 8, borderRadius: 4, border: '1px solid #cbd5e1', fontSize: 14 }} />
-            <input type="text" placeholder="Lieu" value={scheduleDialog.location}
-              onChange={(e) => setScheduleDialog(s => ({ ...s, location: e.target.value }))}
-              style={{ padding: 8, borderRadius: 4, border: '1px solid #cbd5e1', fontSize: 14 }} />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setScheduleDialog({ open: false, match: null, date: '', location: '' })}>Annuler</Button>
-          <Button variant="contained" onClick={saveSchedule}>Enregistrer</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ── Score Dialog ── */}
-      <Dialog open={scoreDialog.open}
-        onClose={() => setScoreDialog({ open: false, match: null, home: '', away: '' })}
-        maxWidth="xs" fullWidth>
-        <DialogTitle>Saisir le score</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              {scoreDialog.match?.homeTeam?.name} vs {scoreDialog.match?.awayTeam?.name}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <input type="number" min="0" placeholder="Dom."
-                value={scoreDialog.home}
-                onChange={(e) => setScoreDialog(s => ({ ...s, home: e.target.value }))}
-                style={{ flex: 1, padding: '10px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: 22, fontWeight: 800, textAlign: 'center' }} />
-              <Typography fontWeight={700} color="text.secondary">–</Typography>
-              <input type="number" min="0" placeholder="Ext."
-                value={scoreDialog.away}
-                onChange={(e) => setScoreDialog(s => ({ ...s, away: e.target.value }))}
-                style={{ flex: 1, padding: '10px 8px', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: 22, fontWeight: 800, textAlign: 'center' }} />
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setScoreDialog({ open: false, match: null, home: '', away: '' })}>Annuler</Button>
-          <Button variant="contained" onClick={saveScore}>Enregistrer</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

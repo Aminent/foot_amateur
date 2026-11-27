@@ -1,4 +1,6 @@
 const { Player, Team, User, Match, MatchEvent, Tournament, PlayerStat } = require('../models');
+const { matchesPlayedCount, resultFor } = require('../services/statsService');
+const { computeStandings } = require('../services/tournamentService');
 const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
@@ -436,13 +438,8 @@ const getMyStats = async (req, res) => {
 
     const stats = player.stats || {};
 
-    // Count team's completed matches
-    const matchesPlayed = await Match.count({
-      where: {
-        [Op.or]: [{ homeTeamId: player.teamId }, { awayTeamId: player.teamId }],
-        status: 'completed',
-      },
-    });
+    // Matchs où le joueur a réellement joué (composition ou entrée en jeu) — même calcul que l'admin et le scout
+    const matchesPlayed = await matchesPlayedCount(player.id);
 
     // ── Per-match breakdown from MatchEvent ───────────────────────────────────
     // Fetch all events where this player is the actor (relatedPlayerId)
@@ -451,7 +448,7 @@ const getMyStats = async (req, res) => {
       include: [{
         model: Match,
         as: 'match',
-        attributes: ['id', 'date', 'status', 'homeTeamId', 'awayTeamId', 'homeTeamScore', 'awayTeamScore'],
+        attributes: ['id', 'date', 'status', 'homeTeamId', 'awayTeamId', 'homeTeamScore', 'awayTeamScore', 'winnerTeamId'],
         where: { status: 'completed' },
         required: true,
         include: [
@@ -476,7 +473,7 @@ const getMyStats = async (req, res) => {
           opponent: opponent ?? '?',
           goalsFor: gf,
           goalsAgainst: ga,
-          result: gf > ga ? 'V' : gf < ga ? 'D' : 'N',
+          result: resultFor(m, player.teamId) || (gf > ga ? 'V' : gf < ga ? 'D' : 'N'),
           goals: 0,
           assists: 0,
           yellowCards: 0,
@@ -517,7 +514,7 @@ const getMyStats = async (req, res) => {
           opponent: opponent ?? '?',
           goalsFor: gf,
           goalsAgainst: ga,
-          result: gf > ga ? 'V' : gf < ga ? 'D' : 'N',
+          result: resultFor(m, player.teamId) || (gf > ga ? 'V' : gf < ga ? 'D' : 'N'),
           goals: 0,
           assists: 0,
           yellowCards: 0,
@@ -635,24 +632,8 @@ const getMyMatches = async (req, res) => {
         where: { tournamentId: tournament.id, status: 'completed' },
       });
 
-      const rows = {};
-      allTeams.forEach(t => {
-        rows[t.id] = { id: t.id, name: t.name, P:0, W:0, D:0, L:0, GF:0, GA:0, GD:0, Pts:0 };
-      });
-      tournamentMatches.forEach(m => {
-        const h = rows[m.homeTeamId], a = rows[m.awayTeamId];
-        if (!h || !a) return;
-        const hg = m.homeTeamScore ?? 0, ag = m.awayTeamScore ?? 0;
-        h.P++; h.GF += hg; h.GA += ag; h.GD += hg - ag;
-        a.P++; a.GF += ag; a.GA += hg; a.GD += ag - hg;
-        if (hg > ag)      { h.W++; h.Pts += 3; a.L++; }
-        else if (hg < ag) { a.W++; a.Pts += 3; h.L++; }
-        else              { h.D++; h.Pts++;     a.D++; a.Pts++; }
-      });
-
-      standings = Object.values(rows)
-        .sort((a, b) => b.Pts - a.Pts || b.GD - a.GD || b.GF - a.GF)
-        .map((r, i) => ({ ...r, position: i + 1, isMyTeam: r.id === teamId }));
+      standings = (await computeStandings(tournament, allTeams, tournamentMatches))
+        .map(r => ({ ...r, isMyTeam: r.id === teamId }));
 
       myPosition = standings.findIndex(r => r.id === teamId) + 1 || null;
     }

@@ -2,17 +2,25 @@ const { TournamentApplication, Team, Tournament, User, Player } = require('../mo
 const { validationResult } = require('express-validator');
 const notificationService = require('../services/notificationService');
 
+// The coach ↔ team link lives on User.teamId (Team.coachId is never set).
+const coachTeamId = async (userId) => {
+  const coach = await User.findByPk(userId, { attributes: ['teamId'] });
+  return coach?.teamId ?? null;
+};
+
 // @route   GET /api/tournament-applications
 // @desc    Get all tournament applications for a coach's teams
 // @access  Private (Coach)
 const getMyApplications = async (req, res) => {
   try {
+    const myTeamId = await coachTeamId(req.user.id);
+    if (!myTeamId) return res.json([]);
     const applications = await TournamentApplication.findAll({
       include: [
         {
           model: Team,
           as: 'team',
-          where: { coachId: req.user.id },
+          where: { id: myTeamId },
           include: [
             {
               model: Player,
@@ -53,9 +61,9 @@ const applyForTournament = async (req, res) => {
     const { teamId, tournamentId } = req.body;
 
     // Check if team belongs to the coach
-    const team = await Team.findOne({
-      where: { id: teamId, coachId: req.user.id }
-    });
+    const team = String(await coachTeamId(req.user.id)) === String(teamId)
+      ? await Team.findByPk(teamId)
+      : null;
 
     if (!team) {
       return res.status(404).json({ message: 'Équipe non trouvée ou non autorisée' });
@@ -67,8 +75,11 @@ const applyForTournament = async (req, res) => {
       return res.status(404).json({ message: 'Tournoi non trouvé' });
     }
 
-    if (tournament.status !== 'active') {
-      return res.status(400).json({ message: 'Ce tournoi n\'accepte pas de candidatures' });
+    if (tournament.status !== 'draft') {
+      return res.status(400).json({ message: 'Les inscriptions à ce tournoi sont closes' });
+    }
+    if (team.tournamentId && team.tournamentId !== tournament.id) {
+      return res.status(400).json({ message: 'Votre équipe participe déjà à un autre tournoi' });
     }
 
     // Check if already applied
@@ -114,9 +125,9 @@ const getAvailableTournaments = async (req, res) => {
     const { teamId } = req.query;
 
     // Check if team belongs to the coach
-    const team = await Team.findOne({
-      where: { id: teamId, coachId: req.user.id }
-    });
+    const team = String(await coachTeamId(req.user.id)) === String(teamId)
+      ? await Team.findByPk(teamId)
+      : null;
 
     if (!team) {
       return res.status(404).json({ message: 'Équipe non trouvée ou non autorisée' });
@@ -132,7 +143,7 @@ const getAvailableTournaments = async (req, res) => {
 
     const availableTournaments = await Tournament.findAll({
       where: {
-        status: 'active',
+        status: 'draft',
         id: { [require('sequelize').Op.notIn]: appliedIds }
       },
       order: [['startDate', 'ASC']]
@@ -215,6 +226,20 @@ const reviewApplication = async (req, res) => {
 
     if (application.status !== 'pending') {
       return res.status(400).json({ message: 'Cette candidature a déjà été traitée' });
+    }
+
+    if (status === 'approved') {
+      const t = application.tournament;
+      if (t.status !== 'draft') {
+        return res.status(400).json({ message: 'Les inscriptions sont closes : le tableau de ce tournoi est déjà généré' });
+      }
+      if (application.team.tournamentId && application.team.tournamentId !== t.id) {
+        return res.status(400).json({ message: 'Cette équipe participe déjà à un autre tournoi' });
+      }
+      const count = await Team.count({ where: { tournamentId: t.id } });
+      if (t.maxTeams && count >= t.maxTeams) {
+        return res.status(400).json({ message: `Le tournoi est complet (${t.maxTeams} équipes)` });
+      }
     }
 
     await application.update({

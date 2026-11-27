@@ -96,9 +96,7 @@ class NotificationService {
 
   static String _fcmEndpoint(String role) => role == 'coach'
       ? '/coaches/me/fcm-token'
-      : role == 'arbitre'
-          ? '/referee/me/fcm-token'
-          : '/players/me/fcm-token';
+      : '/players/me/fcm-token';
 
   Future<void> _registerToken(
       ApiClient apiClient, String token, String userRole) async {

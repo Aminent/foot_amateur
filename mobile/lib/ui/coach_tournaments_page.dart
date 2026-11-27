@@ -100,7 +100,7 @@ class _CoachTournamentsPageState extends State<CoachTournamentsPage>
       case 'active':    return 'Actif';
       case 'completed': return 'Terminé';
       case 'cancelled': return 'Annulé';
-      default:          return 'Brouillon';
+      default:          return 'Inscriptions ouvertes';
     }
   }
 
@@ -558,8 +558,11 @@ class _CoachTournamentsPageState extends State<CoachTournamentsPage>
 
   Widget _buildStandingsTab(List<Map<String, dynamic>> standings) {
     if (standings.isEmpty) {
-      return const Center(
-        child: Text('Classement disponible dès le premier match terminé',
+      final knockout = _data?['tournament']?['format'] == 'knockout';
+      return Center(
+        child: Text(knockout
+                ? 'Tournoi à élimination directe : pas de classement par points'
+                : 'Classement disponible dès le premier match terminé',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey)),
       );

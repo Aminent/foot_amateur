@@ -74,8 +74,9 @@ router.get('/', getAllTournaments);
 router.get('/:id', getTournamentById);
 router.get('/:id/stats', getTournamentStats);
 // Bracket endpoints
-const { generateBracket, getBracket } = require('../controllers/tournamentBracketController');
+const { generateBracket, getBracket, generateLeagueSchedule } = require('../controllers/tournamentBracketController');
 router.post('/:id/bracket/generate', auth, requireCoach, generateBracket);
+router.post('/:id/schedule/generate', auth, requireAdmin, generateLeagueSchedule);
 router.get('/:id/bracket', getBracket);
 
 // Routes protégées (création, modification, suppression)

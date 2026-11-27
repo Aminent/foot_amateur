@@ -1,5 +1,6 @@
 const { MatchLineup, Match, Team, Player, User } = require('../models');
 const notificationService = require('../services/notificationService');
+const { recomputePlayerStats } = require('../services/statsService');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,13 @@ const saveLineup = async (req, res) => {
     if (!formation) return res.status(400).json({ message: 'Formation requise' });
     if (!Array.isArray(players)) return res.status(400).json({ message: 'Joueurs requis' });
 
+    const squadIds = new Set((await Player.findAll({ where: { teamId: coach.teamId }, attributes: ['id'], raw: true })).map(p => p.id));
+    if (players.some(p => !squadIds.has(Number(p.playerId)))) {
+      return res.status(400).json({ message: "La composition contient un joueur qui n'est pas dans l'équipe" });
+    }
+    const before = await MatchLineup.findOne({ where: { matchId: match.id, teamId: coach.teamId }, raw: true });
+    const previousIds = (before?.players || []).map(p => Number(p.playerId));
+
     const [lineup] = await MatchLineup.upsert({
       matchId: match.id,
       teamId: coach.teamId,
@@ -102,6 +110,11 @@ const saveLineup = async (req, res) => {
     const saved = await MatchLineup.findOne({
       where: { matchId: match.id, teamId: coach.teamId },
     });
+
+    // The lineup decides who played: minutes and goalkeeper stats follow it.
+    if (match.status === 'completed') {
+      await recomputePlayerStats([...previousIds, ...players.map(p => Number(p.playerId))]);
+    }
 
     res.json({ lineup: { id: saved.id, formation: saved.formation, players: saved.players, status: saved.status } });
   } catch (err) {

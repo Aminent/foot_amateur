@@ -1,4 +1,5 @@
 const { Player, PlayerStat, PlayerClubHistory, Team } = require('../models');
+const { matchesPlayedCount } = require('../services/statsService');
 
 // GET /players/:id/club-history
 const getClubHistory = async (req, res) => {
@@ -42,7 +43,7 @@ const removeFromTeam = async (req, res) => {
       endDate:      new Date().toISOString().split('T')[0],
       goals:        stats?.goals        || 0,
       assists:      stats?.assists      || 0,
-      matches:      stats?.matchesPlayed || 0,
+      matches:      await matchesPlayedCount(player.id),
       minutesPlayed:stats?.minutesPlayed || 0,
       yellowCards:  stats?.yellowCards  || 0,
       redCards:     stats?.redCards     || 0,

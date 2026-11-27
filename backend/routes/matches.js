@@ -42,7 +42,7 @@ router.put(
     body('date').optional().isISO8601(),
     body('homeTeamScore').optional().isInt({ min: 0 }),
     body('awayTeamScore').optional().isInt({ min: 0 }),
-    body('status').optional().isIn(['scheduled', 'in_progress', 'completed', 'cancelled', 'postponed']),
+    body('status').optional().isIn(['scheduled', 'in_progress', 'half_time', 'completed', 'cancelled', 'postponed']),
   ],
   updateMatch
 );

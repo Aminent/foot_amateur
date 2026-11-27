@@ -25,6 +25,7 @@ const MATCH_DURATION  = 90 * 60; // 90 min total
 
 const EVENT_TYPES = [
   { value: 'goal',         label: '⚽ But',             color: '#16a34a' },
+  { value: 'assist',       label: '🅰️ Passe décisive',   color: '#0284c7' },
   { value: 'penalty_goal', label: '🎯 But sur penalty',  color: '#15803d' },
   { value: 'own_goal',     label: '⚽ CSC',              color: '#dc2626' },
   { value: 'yellow_card',  label: '🟨 Carton jaune',     color: '#ca8a04' },
@@ -228,6 +229,10 @@ export default function LiveMatch() {
   // ── Event submission ──────────────────────────────────────────────────────
   const submitEvent = async () => {
     if (!minute) return showToast('La minute est requise', true);
+    // A typed name is not linked to any profile, so it would never reach the player's stats.
+    if ((playerInputName && !selectedPlayer) || (subInInputName && !selectedSubIn)) {
+      return showToast('Choisissez le joueur dans la liste de l\'équipe', true);
+    }
     setSubmitting(true);
     try {
       const isSub = eventType === 'substitution';

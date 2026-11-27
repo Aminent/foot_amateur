@@ -1,71 +1,12 @@
 const { Op } = require('sequelize');
 const { Match, MatchEvent, Team, Tournament, Player, User, PlayerStat } = require('../models');
 const notificationService = require('../services/notificationService');
+const { recomputePlayerStats, playerIdsOfEvents, playerIdsOfMatches, scoreFromEvents } = require('../services/statsService');
 
-// ── Mapping événement → champ de stat (delta = +1 ou -1) ──────────────────────
-const EVENT_STAT_MAP = {
-  goal:         { field: 'goals',       playerId: 'relatedPlayerId' },
-  penalty_goal: { field: 'goals',       playerId: 'relatedPlayerId' },
-  assist:       { field: 'assists',     playerId: 'relatedPlayerId' },
-  yellow_card:  { field: 'yellowCards', playerId: 'relatedPlayerId' },
-  red_card:     { field: 'redCards',    playerId: 'relatedPlayerId' },
-};
-
-// Incrémente (delta=+1) ou décrémente (delta=-1) une stat pour un joueur
-const applyStatDelta = async (playerId, field, delta) => {
-  if (!playerId || !field) return;
-  const [stat] = await PlayerStat.findOrCreate({ where: { playerId }, defaults: { playerId } });
-  const current = stat[field] || 0;
-  await stat.update({ [field]: Math.max(0, current + delta) });
-};
-
-// Calcule et enregistre les minutes jouées pour tous les joueurs d'un match terminé
-const computeMinutesPlayed = async (matchId, matchDuration = 90) => {
-  try {
-    const events = await MatchEvent.findAll({ where: { matchId, type: 'substitution' } });
-    const match = await Match.findByPk(matchId, {
-      include: [
-        { model: Team, as: 'homeTeam', include: [{ model: Player, as: 'players', attributes: ['id'] }] },
-        { model: Team, as: 'awayTeam', include: [{ model: Player, as: 'players', attributes: ['id'] }] },
-      ],
-    });
-    if (!match) return;
-
-    const allPlayers = [
-      ...(match.homeTeam?.players || []),
-      ...(match.awayTeam?.players || []),
-    ];
-
-    // Build substitution map
-    const subOutAt = {}; // playerId → minute they left
-    const subInAt  = {}; // playerId → minute they entered
-    for (const ev of events) {
-      if (ev.substitutionPlayerOutId) subOutAt[ev.substitutionPlayerOutId] = ev.minute;
-      if (ev.substitutionPlayerInId)  subInAt[ev.substitutionPlayerInId]  = ev.minute;
-    }
-
-    for (const player of allPlayers) {
-      const pid = player.id;
-      let minutes = 0;
-      if (subInAt[pid] !== undefined) {
-        // Player entered mid-game
-        minutes = matchDuration - subInAt[pid];
-      } else if (subOutAt[pid] !== undefined) {
-        // Player left mid-game
-        minutes = subOutAt[pid];
-      } else {
-        // Player played full match
-        minutes = matchDuration;
-      }
-      if (minutes > 0) {
-        const [stat] = await PlayerStat.findOrCreate({ where: { playerId: pid }, defaults: { playerId: pid } });
-        await stat.update({ minutesPlayed: (stat.minutesPlayed || 0) + minutes });
-      }
-    }
-  } catch (err) {
-    console.error('[Stats] computeMinutesPlayed error:', err.message);
-  }
-};
+// Minutes, goals conceded and clean sheets depend on the whole match: recompute everyone involved.
+const recomputeMatchPlayers = async (matchId, extraIds = []) =>
+  recomputePlayerStats([...await playerIdsOfMatches([matchId]), ...extraIds]);
+const { syncTournamentStatus } = require('../services/tournamentService');
 
 const matchIncludes = [
   { model: Team, as: 'homeTeam', attributes: ['id', 'name'], include: [{ model: Player, as: 'players', attributes: ['id', 'name', 'jerseyNumber', 'position'], required: false }] },
@@ -82,6 +23,50 @@ const emitLive = (matchId, type, data) => {
   if (global.io) global.io.to(`match_${matchId}`).emit('live-update', { type, ...data });
 };
 
+// A tournament match may only oppose teams registered in that tournament.
+const teamsOutsideTournament = async (tournamentId, ids) => {
+  if (!tournamentId) return null;
+  const teams = await Team.findAll({ where: { id: ids.filter(Boolean) }, attributes: ['id', 'name', 'tournamentId'] });
+  const outside = teams.filter(t => String(t.tournamentId) !== String(tournamentId));
+  return outside.length ? `${outside.map(t => t.name).join(', ')} : équipe non inscrite à ce tournoi` : null;
+};
+
+// Winner of a match given its (saved or prospective) state; a bracket draw needs an explicit shoot-out winner.
+const winnerOf = ({ status, homeTeamId, awayTeamId, homeTeamScore, awayTeamScore, matchIndex }, chosen) => {
+  if (status !== 'completed' || !homeTeamId || !awayTeamId) return null;
+  if (homeTeamScore > awayTeamScore) return homeTeamId;
+  if (awayTeamScore > homeTeamScore) return awayTeamId;
+  if (matchIndex !== null && matchIndex !== undefined
+      && chosen && [String(homeTeamId), String(awayTeamId)].includes(String(chosen))) return Number(chosen);
+  return null;
+};
+
+// A stored winner only counts as shoot-out winner if the stored result was already a draw.
+const shootoutWinner = (match) =>
+  match.status === 'completed' && match.homeTeamScore === match.awayTeamScore ? match.winnerTeamId : null;
+
+// The next bracket match is frozen once played: its slot must not change under it.
+const nextSlotConflict = async (match, winnerTeamId) => {
+  if (!match.advancesToMatchId) return null;
+  const next = await Match.findByPk(match.advancesToMatchId);
+  if (!next) return null;
+  const key = (match.matchIndex ?? 0) % 2 === 0 ? 'homeTeamId' : 'awayTeamId';
+  if (String(next[key] ?? '') === String(winnerTeamId ?? '')) return null;
+  return next.status === 'completed'
+    ? 'Le match suivant du tableau est déjà joué : ce résultat ne peut plus changer le qualifié'
+    : null;
+};
+
+const advanceWinner = async (match) => {
+  if (!match.advancesToMatchId) return;
+  const next = await Match.findByPk(match.advancesToMatchId);
+  if (!next) return;
+  const key = (match.matchIndex ?? 0) % 2 === 0 ? 'homeTeamId' : 'awayTeamId';
+  if (String(next[key] ?? '') === String(match.winnerTeamId ?? '')) return;
+  await next.update({ [key]: match.winnerTeamId });
+  emit(match.tournamentId, 'match-updated', { matchId: next.id, tournamentId: match.tournamentId });
+};
+
 // GET /api/matches
 const getMatches = async (req, res) => {
   try {
@@ -89,7 +74,11 @@ const getMatches = async (req, res) => {
     const where = {};
     if (tournamentId) where.tournamentId = tournamentId;
     if (status) where.status = status;
-    if (teamId) where[Op.or] = [{ homeTeamId: teamId }, { awayTeamId: teamId }];
+    if (teamId) {
+      // a team's list shows games it played, not byes (no opponent)
+      where[Op.or] = [{ homeTeamId: teamId }, { awayTeamId: teamId }];
+      where[Op.and] = [{ homeTeamId: { [Op.ne]: null } }, { awayTeamId: { [Op.ne]: null } }];
+    }
 
     const matches = await Match.findAll({
       where,
@@ -123,6 +112,15 @@ const createMatch = async (req, res) => {
     if (!date) return res.status(400).json({ message: 'La date est requise' });
     if (!homeTeamId || !awayTeamId) return res.status(400).json({ message: 'Les deux équipes sont requises' });
     if (String(homeTeamId) === String(awayTeamId)) return res.status(400).json({ message: "L'équipe domicile et l'équipe visiteur doivent être différentes" });
+    if (tournamentId) {
+      const tournament = await Tournament.findByPk(tournamentId);
+      if (!tournament) return res.status(404).json({ message: 'Tournoi introuvable' });
+      if (tournament.format === 'knockout') {
+        return res.status(400).json({ message: "Les matchs d'un tournoi à élimination sont créés par la génération du tableau" });
+      }
+      const outside = await teamsOutsideTournament(tournamentId, [homeTeamId, awayTeamId]);
+      if (outside) return res.status(400).json({ message: outside });
+    }
 
     const match = await Match.create({
       tournamentId: tournamentId || null,
@@ -141,6 +139,7 @@ const createMatch = async (req, res) => {
 
     const full = await Match.findByPk(match.id, { include: matchIncludes });
     emit(tournamentId, 'match-created', { matchId: match.id, tournamentId });
+    await syncTournamentStatus(match.tournamentId);
     res.status(201).json({ match: full });
   } catch (error) {
     console.error('createMatch error:', error);
@@ -161,17 +160,42 @@ const updateMatch = async (req, res) => {
       attendance, weather,
     } = req.body;
 
-    const homeScore = homeTeamScore !== undefined ? Number(homeTeamScore) : match.homeTeamScore;
-    const awayScore = awayTeamScore !== undefined ? Number(awayTeamScore) : match.awayTeamScore;
+    // An empty select sends '' — treat it as "unchanged", never as "remove the team".
+    const pick = (v, cur) => (v === undefined || v === '' ? cur : v);
+    const finalHomeId = pick(homeTeamId, match.homeTeamId);
+    const finalAwayId = pick(awayTeamId, match.awayTeamId);
+    const finalTournamentId = pick(tournamentId, match.tournamentId);
+    const finalStatus = status ?? match.status;
+    const isBracketMatch = match.matchIndex !== null && match.matchIndex !== undefined;
 
-    let winnerTeamId = match.winnerTeamId;
-    if (status === 'completed' || req.body.winnerTeamId !== undefined) {
-      winnerTeamId = homeScore > awayScore
-        ? (homeTeamId || match.homeTeamId)
-        : awayScore > homeScore
-          ? (awayTeamId || match.awayTeamId)
-          : null;
+    const teamsChanged = String(finalHomeId ?? '') !== String(match.homeTeamId ?? '')
+      || String(finalAwayId ?? '') !== String(match.awayTeamId ?? '');
+    const tournamentChanged = String(finalTournamentId ?? '') !== String(match.tournamentId ?? '');
+    if (isBracketMatch && (teamsChanged || tournamentChanged)) {
+      return res.status(400).json({ message: "Les équipes d'un match du tableau sont fixées par le tableau et ne peuvent pas être modifiées" });
     }
+    if (teamsChanged || tournamentChanged) {
+      const outside = await teamsOutsideTournament(finalTournamentId, [finalHomeId, finalAwayId]);
+      if (outside) return res.status(400).json({ message: outside });
+    }
+
+    // Once goal events exist, they decide the score.
+    const eventScore = await scoreFromEvents(match.id);
+    const homeScore = eventScore ? eventScore.homeTeamScore : homeTeamScore !== undefined ? Number(homeTeamScore) : match.homeTeamScore;
+    const awayScore = eventScore ? eventScore.awayTeamScore : awayTeamScore !== undefined ? Number(awayTeamScore) : match.awayTeamScore;
+
+    if (finalStatus === 'completed' && (!finalHomeId || !finalAwayId)) {
+      return res.status(400).json({ message: 'Impossible de clôturer un match sans ses deux équipes' });
+    }
+    const winnerTeamId = winnerOf({
+      status: finalStatus, homeTeamId: finalHomeId, awayTeamId: finalAwayId,
+      homeTeamScore: homeScore, awayTeamScore: awayScore, matchIndex: match.matchIndex,
+    }, req.body.winnerTeamId ?? shootoutWinner(match));
+    if (finalStatus === 'completed' && isBracketMatch && !winnerTeamId) {
+      return res.status(400).json({ message: 'Match nul en élimination : choisissez le vainqueur aux tirs au but' });
+    }
+    const conflict = await nextSlotConflict(match, winnerTeamId);
+    if (conflict) return res.status(400).json({ message: conflict });
 
     // ── #2 : Avertissement si clôture avec score 0-0 ─────────────────────────
     const scoreWarning = (status === 'completed' && homeScore === 0 && awayScore === 0)
@@ -179,15 +203,16 @@ const updateMatch = async (req, res) => {
       : null;
 
     await match.update({
-      tournamentId: tournamentId ?? match.tournamentId,
-      homeTeamId: homeTeamId ?? match.homeTeamId,
-      awayTeamId: awayTeamId ?? match.awayTeamId,
+      tournamentId: finalTournamentId,
+      homeTeamId: finalHomeId,
+      awayTeamId: finalAwayId,
       date: date ?? match.date,
       location: location !== undefined ? location : match.location,
-      roundNumber: roundNumber !== undefined ? (roundNumber ? parseInt(roundNumber) : null) : match.roundNumber,
+      roundNumber: isBracketMatch ? match.roundNumber
+        : roundNumber !== undefined ? (roundNumber ? parseInt(roundNumber) : null) : match.roundNumber,
       referee: referee !== undefined ? referee : match.referee,
       notes: notes !== undefined ? notes : match.notes,
-      status: status ?? match.status,
+      status: finalStatus,
       homeTeamScore: homeScore,
       awayTeamScore: awayScore,
       halfTimeHomeScore: halfTimeHomeScore !== undefined ? Number(halfTimeHomeScore) : match.halfTimeHomeScore,
@@ -197,45 +222,14 @@ const updateMatch = async (req, res) => {
       winnerTeamId,
     });
 
-    // advance winner if knockout
-    if (winnerTeamId && match.advancesToMatchId) {
-      const next = await Match.findByPk(match.advancesToMatchId);
-      if (next) {
-        const fillHome = (match.matchIndex ?? 0) % 2 === 0;
-        await next.update(fillHome ? { homeTeamId: winnerTeamId } : { awayTeamId: winnerTeamId });
-      }
-    }
-
-    // ── #6 : Match nul en tournoi avec avancement attendu → alerte admin ────
-    if (status === 'completed' && !winnerTeamId && match.advancesToMatchId) {
-      if (global.io) {
-        global.io.to('admins').emit('match-draw-no-advance', {
-          matchId: match.id,
-          homeTeam: match.homeTeamId,
-          awayTeam: match.awayTeamId,
-          homeScore,
-          awayScore,
-          message: 'Match nul en tournoi knockout : veuillez désigner un vainqueur (tirs au but, etc.)',
-        });
-      }
-      console.warn(`[Bracket] Match #${match.id} nul ${homeScore}-${awayScore} sans vainqueur — avancement bloqué`);
-    }
+    await advanceWinner(match);
+    await syncTournamentStatus(match.tournamentId);
+    await recomputeMatchPlayers(match.id);
 
     const full = await Match.findByPk(match.id, { include: matchIncludes });
     emit(match.tournamentId, 'match-updated', { matchId: match.id, tournamentId: match.tournamentId });
     emitLive(match.id, 'status', { match: full });
     res.json({ match: full, ...(scoreWarning ? { warning: scoreWarning } : {}) });
-
-    // ── #4 : Calcul des minutes jouées — protégé contre les doubles appels ──
-    // On vérifie `minutesComputed` en base avant de lancer le calcul.
-    // Le flag est posé atomiquement pour éviter la concurrence.
-    if (status === 'completed' && !match.minutesComputed) {
-      // Marquer immédiatement pour bloquer tout appel concurrent
-      match.update({ minutesComputed: true }).catch(() => {});
-      computeMinutesPlayed(match.id).catch(err =>
-        console.warn('[Stats] minutesPlayed error:', err.message)
-      );
-    }
 
     // Push notification when score/result is set (fire-and-forget)
     try {
@@ -286,16 +280,14 @@ const deleteMatch = async (req, res) => {
     if (!match) return res.status(404).json({ message: 'Match introuvable' });
 
     // ── #3 : Annuler les stats joueurs avant de supprimer les événements ─────
-    const events = await MatchEvent.findAll({ where: { matchId: match.id } });
-    for (const ev of events) {
-      const statMap = EVENT_STAT_MAP[ev.type];
-      if (statMap && ev[statMap.playerId]) {
-        await applyStatDelta(ev[statMap.playerId], statMap.field, -1);
-      }
+    if (match.matchIndex !== null && match.matchIndex !== undefined) {
+      return res.status(400).json({ message: 'Un match du tableau ne peut pas être supprimé seul : régénérez le tableau du tournoi' });
     }
-
+    const affected = await playerIdsOfMatches([match.id]);
     await MatchEvent.destroy({ where: { matchId: match.id } });
     await match.destroy();
+    await recomputePlayerStats(affected);
+    await syncTournamentStatus(match.tournamentId);
 
     emit(match.tournamentId, 'match-deleted', { matchId: match.id, tournamentId: match.tournamentId });
     res.json({ message: 'Match supprimé' });
@@ -312,6 +304,22 @@ const VALID_EVENT_TYPES = [
   'substitution', 'assist',
   'foul', 'offside', 'corner', 'var',
 ];
+
+// After an event change: score from goal events, then winner/advancement. Returns an error message to roll back.
+const resyncAfterEvents = async (match) => {
+  const score = await scoreFromEvents(match.id) || { homeTeamScore: 0, awayTeamScore: 0 };
+  const next = { ...match.toJSON(), ...score };
+  const winnerTeamId = winnerOf(next, shootoutWinner(match));
+  if (next.status === 'completed' && next.matchIndex !== null && next.matchIndex !== undefined && !winnerTeamId) {
+    return 'Ce changement rend le match nul : rouvrez le résultat et choisissez le vainqueur aux tirs au but';
+  }
+  const conflict = await nextSlotConflict(match, winnerTeamId);
+  if (conflict) return conflict;
+  await match.update({ ...score, winnerTeamId });
+  await advanceWinner(match);
+  await syncTournamentStatus(match.tournamentId);
+  return null;
+};
 
 // POST /api/matches/:id/events
 const addMatchEvent = async (req, res) => {
@@ -331,34 +339,36 @@ const addMatchEvent = async (req, res) => {
     }
     if (!minute) return res.status(400).json({ message: 'La minute est requise' });
 
+    const sideTeamId = isHomeTeam ? match.homeTeamId : match.awayTeamId;
+    const names = {};
+    for (const [idKey, nameKey] of [['relatedPlayerId', 'relatedPlayerName'], ['substitutionPlayerInId', 'substitutionPlayerInName'], ['substitutionPlayerOutId', 'substitutionPlayerOutName']]) {
+      if (!req.body[idKey]) continue;
+      const p = await Player.findByPk(req.body[idKey], { attributes: ['id', 'name', 'teamId'] });
+      if (!p || String(p.teamId) !== String(sideTeamId)) {
+        return res.status(400).json({ message: "Le joueur choisi n'appartient pas à l'équipe indiquée pour cet événement" });
+      }
+      names[nameKey] = p.name;
+    }
+
     const event = await MatchEvent.create({
       matchId: match.id, type, minute: parseInt(minute),
       extraMinute: extraMinute ? parseInt(extraMinute) : null,
       isHomeTeam: Boolean(isHomeTeam),
-      relatedPlayerName: relatedPlayerName || null,
+      relatedPlayerName: names.relatedPlayerName || relatedPlayerName || null,
       relatedPlayerId: relatedPlayerId || null,
       description: description || null,
       substitutionPlayerInId: substitutionPlayerInId || null,
-      substitutionPlayerInName: substitutionPlayerInName || null,
+      substitutionPlayerInName: names.substitutionPlayerInName || substitutionPlayerInName || null,
       substitutionPlayerOutId: substitutionPlayerOutId || null,
-      substitutionPlayerOutName: substitutionPlayerOutName || null,
+      substitutionPlayerOutName: names.substitutionPlayerOutName || substitutionPlayerOutName || null,
     });
 
-    // auto-update score on goal events
-    if (type === 'goal' || type === 'penalty_goal') {
-      const field = isHomeTeam ? 'homeTeamScore' : 'awayTeamScore';
-      await match.update({ [field]: (match[field] || 0) + 1 });
-    } else if (type === 'own_goal') {
-      // own goal → opposite team scores
-      const field = isHomeTeam ? 'awayTeamScore' : 'homeTeamScore';
-      await match.update({ [field]: (match[field] || 0) + 1 });
+    const err = await resyncAfterEvents(match);
+    if (err) {
+      await event.destroy();
+      return res.status(400).json({ message: err });
     }
-
-    // ── Auto-update player stats ──────────────────────────────────────────────
-    const statMap = EVENT_STAT_MAP[type];
-    if (statMap && event[statMap.playerId]) {
-      await applyStatDelta(event[statMap.playerId], statMap.field, +1);
-    }
+    await recomputeMatchPlayers(match.id);
 
     const refreshed = await Match.findByPk(match.id, { include: matchIncludes });
     emit(match.tournamentId, 'match-event-added', { matchId: match.id, eventId: event.id });
@@ -379,22 +389,14 @@ const deleteMatchEvent = async (req, res) => {
 
     const match = await Match.findByPk(id);
 
-    // reverse score impact
-    if (event.type === 'goal' || event.type === 'penalty_goal') {
-      const field = event.isHomeTeam ? 'homeTeamScore' : 'awayTeamScore';
-      await match.update({ [field]: Math.max(0, (match[field] || 0) - 1) });
-    } else if (event.type === 'own_goal') {
-      const field = event.isHomeTeam ? 'awayTeamScore' : 'homeTeamScore';
-      await match.update({ [field]: Math.max(0, (match[field] || 0) - 1) });
-    }
-
-    // ── Reverse player stats ──────────────────────────────────────────────────
-    const statMap = EVENT_STAT_MAP[event.type];
-    if (statMap && event[statMap.playerId]) {
-      await applyStatDelta(event[statMap.playerId], statMap.field, -1);
-    }
-
+    const snapshot = event.toJSON();
     await event.destroy();
+    const err = await resyncAfterEvents(match);
+    if (err) {
+      await MatchEvent.create(snapshot);
+      return res.status(400).json({ message: err });
+    }
+    await recomputeMatchPlayers(match.id, playerIdsOfEvents([snapshot]));
     const refreshed = await Match.findByPk(id, { include: matchIncludes });
     emit(match.tournamentId, 'match-event-deleted', { matchId: id, eventId });
     emitLive(id, 'event-deleted', { match: refreshed, eventId });
@@ -404,6 +406,8 @@ const deleteMatchEvent = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la suppression de l\'événement' });
   }
 };
+
+
 
 // Legacy routes kept for compatibility
 const scheduleMatch = async (req, res) => {

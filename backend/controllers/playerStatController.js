@@ -1,5 +1,21 @@
-const { Op } = require('sequelize');
 const { Player, PlayerStat, Match, MatchEvent } = require('../models');
+const { matchesPlayedCount, playedMatchIds, recomputePlayerStats } = require('../services/statsService');
+
+// Faits du joueur match par match (ordre chronologique) : alimente les courbes d'évolution.
+const EVENT_KEY = { goal: 'goals', penalty_goal: 'goals', assist: 'assists', yellow_card: 'yellowCards', red_card: 'redCards' };
+const perMatchStatsOf = async (playerId) => {
+  const ids = [...await playedMatchIds(playerId)];
+  if (!ids.length) return [];
+  const [matches, events] = await Promise.all([
+    Match.findAll({ where: { id: ids }, attributes: ['id', 'date'], order: [['date', 'ASC']], raw: true }),
+    MatchEvent.findAll({ where: { matchId: ids, relatedPlayerId: playerId }, attributes: ['matchId', 'type'], raw: true }),
+  ]);
+  return matches.map(m => {
+    const row = { matchId: m.id, date: m.date, goals: 0, assists: 0, yellowCards: 0, redCards: 0 };
+    for (const e of events) if (e.matchId === m.id && EVENT_KEY[e.type]) row[EVENT_KEY[e.type]]++;
+    return row;
+  });
+};
 
 const getStats = async (req, res) => {
   try {
@@ -7,21 +23,9 @@ const getStats = async (req, res) => {
     let stats = await PlayerStat.findOne({ where: { playerId } });
     if (!stats) stats = await PlayerStat.create({ playerId });
 
-    // Compute matchesPlayed from real match data
-    let matchesPlayed = 0;
-    try {
-      const player = await Player.findByPk(playerId);
-      if (player && player.teamId) {
-        matchesPlayed = await Match.count({
-          where: {
-            [Op.or]: [{ homeTeamId: player.teamId }, { awayTeamId: player.teamId }],
-            status: 'completed',
-          },
-        });
-      }
-    } catch (_) {}
+    const [matchesPlayed, perMatchStats] = await Promise.all([matchesPlayedCount(playerId), perMatchStatsOf(Number(playerId))]);
 
-    res.json({ stats: { ...stats.toJSON(), matchesPlayed } });
+    res.json({ stats: { ...stats.toJSON(), matchesPlayed, perMatchStats } });
   } catch (error) {
     console.error('Error getting stats:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des statistiques' });
@@ -33,15 +37,14 @@ const setStats = async (req, res) => {
     const { playerId } = req.params;
     let stats = await PlayerStat.findOne({ where: { playerId } });
     if (!stats) stats = await PlayerStat.create({ playerId });
+    // goals, assists, cards, minutes, clean sheets and goals conceded are derived from matches (services/statsService).
     const {
-      goals, assists, shots, shotsOnTarget, passes, keyPasses, tackles,
+      shots, shotsOnTarget, passes, keyPasses, tackles,
       interceptions, clearances, dribbles, foulsCommitted, foulsSuffered,
-      offsides, saves, cleanSheets, goalsConceded, penaltiesSaved,
-      duelsWon, aerialDuelsWon, minutesPlayed, yellowCards, redCards,
+      offsides, saves, penaltiesSaved,
+      duelsWon, aerialDuelsWon,
     } = req.body;
     await stats.update({
-      ...(goals !== undefined && { goals }),
-      ...(assists !== undefined && { assists }),
       ...(shots !== undefined && { shots }),
       ...(shotsOnTarget !== undefined && { shotsOnTarget }),
       ...(passes !== undefined && { passes }),
@@ -54,14 +57,9 @@ const setStats = async (req, res) => {
       ...(foulsSuffered !== undefined && { foulsSuffered }),
       ...(offsides !== undefined && { offsides }),
       ...(saves !== undefined && { saves }),
-      ...(cleanSheets !== undefined && { cleanSheets }),
-      ...(goalsConceded !== undefined && { goalsConceded }),
       ...(penaltiesSaved !== undefined && { penaltiesSaved }),
       ...(duelsWon !== undefined && { duelsWon }),
       ...(aerialDuelsWon !== undefined && { aerialDuelsWon }),
-      ...(minutesPlayed !== undefined && { minutesPlayed }),
-      ...(yellowCards !== undefined && { yellowCards }),
-      ...(redCards !== undefined && { redCards }),
     });
     res.json({ message: 'Statistiques mises à jour', stats });
   } catch (error) {
@@ -74,7 +72,7 @@ const incrementStat = async (req, res) => {
   try {
     const { playerId } = req.params;
     const { field, amount = 1 } = req.body;
-    const allowed = ['goals','assists','shots','shotsOnTarget','passes','keyPasses','tackles','interceptions','clearances','dribbles','foulsCommitted','foulsSuffered','offsides','saves','cleanSheets','goalsConceded','penaltiesSaved','duelsWon','aerialDuelsWon','minutesPlayed','yellowCards','redCards'];
+    const allowed = ['shots','shotsOnTarget','passes','keyPasses','tackles','interceptions','clearances','dribbles','foulsCommitted','foulsSuffered','offsides','saves','penaltiesSaved','duelsWon','aerialDuelsWon'];
     if (!allowed.includes(field)) return res.status(400).json({ message: 'Champ invalide' });
     let stats = await PlayerStat.findOne({ where: { playerId } });
     if (!stats) stats = await PlayerStat.create({ playerId });
@@ -91,51 +89,9 @@ const incrementStat = async (req, res) => {
 // POST /api/player-stats/recalculate   (admin uniquement)
 const recalculateAllStats = async (req, res) => {
   try {
-    const EVENT_STAT_MAP = {
-      goal:         { field: 'goals',       playerId: 'relatedPlayerId' },
-      penalty_goal: { field: 'goals',       playerId: 'relatedPlayerId' },
-      assist:       { field: 'assists',     playerId: 'relatedPlayerId' },
-      yellow_card:  { field: 'yellowCards', playerId: 'relatedPlayerId' },
-      red_card:     { field: 'redCards',    playerId: 'relatedPlayerId' },
-    };
-
-    // Réinitialiser toutes les stats calculables à 0
-    await PlayerStat.update(
-      { goals: 0, assists: 0, yellowCards: 0, redCards: 0 },
-      { where: {} }
-    );
-
-    // Recalculer depuis tous les MatchEvent
-    const events = await MatchEvent.findAll({
-      where: { type: { [Op.in]: Object.keys(EVENT_STAT_MAP) } },
-    });
-
-    const counters = {}; // { playerId: { goals: n, assists: n, ... } }
-
-    for (const ev of events) {
-      const map = EVENT_STAT_MAP[ev.type];
-      if (!map || !ev[map.playerId]) continue;
-      const pid = ev[map.playerId];
-      if (!counters[pid]) counters[pid] = {};
-      counters[pid][map.field] = (counters[pid][map.field] || 0) + 1;
-    }
-
-    let updated = 0;
-    for (const [playerId, fields] of Object.entries(counters)) {
-      const [stat] = await PlayerStat.findOrCreate({
-        where: { playerId },
-        defaults: { playerId },
-      });
-      await stat.update(fields);
-      updated++;
-    }
-
-    console.log(`[Stats] Recalcul terminé : ${updated} joueur(s) mis à jour sur ${events.length} événements`);
-    res.json({
-      message: `Recalcul terminé : ${updated} joueur(s) mis à jour`,
-      eventsProcessed: events.length,
-      playersUpdated: updated,
-    });
+    const ids = (await Player.findAll({ attributes: ['id'], raw: true })).map(p => p.id);
+    await recomputePlayerStats(ids);
+    res.json({ message: `Recalcul terminé : ${ids.length} joueur(s) mis à jour`, playersUpdated: ids.length });
   } catch (error) {
     console.error('[Stats] recalculateAllStats error:', error);
     res.status(500).json({ message: 'Erreur lors du recalcul des statistiques' });
