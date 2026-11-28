@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Scarf from '../components/Admin/Scarf';
 import { authHeaders } from '../utils/api';
 import { POSITION_CONFIG } from '../utils/positionConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -82,10 +83,10 @@ const StatusChip = ({ status }) => {
 const RowActions = ({ onView, onEdit, onDelete }) => (
   <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'flex-end' }}>
     {onView && (
-      <Tooltip title="Voir"><IconButton size="small" onClick={onView} sx={{ color: 'text.secondary', '&:hover': { color: '#3b82f6' } }}><VisibilityIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+      <Tooltip title="Voir"><IconButton size="small" onClick={onView} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}><VisibilityIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
     )}
-    <Tooltip title="Modifier"><IconButton size="small" onClick={onEdit} sx={{ color: 'text.secondary', '&:hover': { color: '#f59e0b' } }}><EditIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-    <Tooltip title="Supprimer"><IconButton size="small" onClick={onDelete} sx={{ color: 'text.secondary', '&:hover': { color: '#ef4444' } }}><DeleteIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+    <Tooltip title="Modifier"><IconButton size="small" onClick={onEdit} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}><EditIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+    <Tooltip title="Supprimer"><IconButton size="small" onClick={onDelete} sx={{ color: 'text.secondary', '&:hover': { color: '#b91c1c' } }}><DeleteIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
   </Box>
 );
 
@@ -98,9 +99,9 @@ const EmptyRow = ({ colSpan, message }) => (
 );
 
 const SectionCard = ({ title, action, children }) => (
-  <Card sx={{ bgcolor: 'background.paper', borderRadius: 3 }}>
-    <Box sx={{ px: 3, py: 2, borderBottom: '1px solid', borderBottomColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.9rem' }}>{title}</Typography>
+  <Card sx={{ bgcolor: 'background.paper', borderRadius: '10px', boxShadow: 'none' }}>
+    <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderBottomColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+      <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, color: 'text.primary', fontSize: '1.2rem', letterSpacing: '0.01em' }}>{title}</Typography>
       {action}
     </Box>
     {children}
@@ -109,8 +110,8 @@ const SectionCard = ({ title, action, children }) => (
 
 const TableHead2 = ({ cols }) => (
   <TableHead>
-    <TableRow sx={{ '& .MuiTableCell-head': { bgcolor: 'action.hover', fontWeight: 600, fontSize: '0.72rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.25, borderBottom: '1px solid', borderBottomColor: 'divider' } }}>
-      {cols.map((c, i) => <TableCell key={i} align={c.align}>{c.label}</TableCell>)}
+    <TableRow sx={{ '& .MuiTableCell-head': { bgcolor: 'background.default', fontWeight: 700, fontSize: '0.72rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1, borderBottom: '1px solid', borderBottomColor: 'divider' } }}>
+      {cols.map((c, i) => <TableCell key={i} align={c.align} sx={c.width ? { width: c.width } : undefined}>{c.label}</TableCell>)}
     </TableRow>
   </TableHead>
 );
@@ -143,9 +144,9 @@ const KpiValue = ({ value }) => {
 // ── Card interaction (mouse glow + color cycle + touch) ───────────────────────
 
 const CARD_GLOW_COLORS = [
-  'rgba(12,158,150,0.14)', 'rgba(99,102,241,0.14)',
+  'rgba(255,90,31,0.14)', 'rgba(99,102,241,0.14)',
   'rgba(245,158,11,0.14)', 'rgba(239,68,68,0.14)',
-  'rgba(16,185,129,0.14)', 'rgba(168,85,247,0.14)',
+  'rgba(47,125,74,0.14)', 'rgba(168,85,247,0.14)',
   'rgba(236,72,153,0.14)', 'rgba(14,165,233,0.14)',
 ];
 
@@ -171,55 +172,19 @@ const useCardInteraction = () => {
   };
 };
 
-const KpiCardItem = ({ card, index }) => {
-  const { mouse, hovered, glow, handlers } = useCardInteraction();
-  return (
-    <Box sx={{
-      animation: 'fadeInUp 0.35s ease both',
-      animationDelay: `${index * 0.08}s`,
-      '@keyframes fadeInUp': { from: { opacity: 0, transform: 'translateY(18px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-    }}>
-      <Card
-        {...handlers}
-        sx={{
-          border: '1px solid',
-          borderColor: hovered ? 'rgba(12,158,150,0.30)' : 'divider',
-          boxShadow: hovered ? '0 20px 40px rgba(12,158,150,0.18)' : '0 1px 4px rgba(0,0,0,0.05)',
-          borderRadius: 3,
-          bgcolor: 'background.paper',
-          position: 'relative',
-          overflow: 'hidden',
-          cursor: 'pointer',
-          transform: hovered ? 'translateY(-10px)' : 'translateY(0)',
-          transition: 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.5s ease, border-color 0.3s ease',
-        }}
-      >
-        {/* Mouse-tracking radial gradient spotlight */}
-        <Box sx={{
-          position: 'absolute', inset: 0, borderRadius: 'inherit',
-          opacity: hovered ? 1 : 0,
-          transition: 'opacity 0.5s',
-          background: `radial-gradient(600px circle at ${mouse.x}px ${mouse.y}px, ${glow}, transparent 50%)`,
-          pointerEvents: 'none',
-          zIndex: 1,
-        }} />
-        <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 }, position: 'relative', zIndex: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
-            <Typography sx={{ color: 'text.secondary', fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {card.label}
-            </Typography>
-            <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: hovered ? glow : 'rgba(12,158,150,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0c9e96', transition: 'background 0.3s', '& svg': { fontSize: 18 } }}>
-              {card.icon}
-            </Box>
-          </Box>
-          <Typography sx={{ fontSize: '2rem', fontWeight: 800, color: 'text.primary', lineHeight: 1 }}>
-            <KpiValue value={card.value} />
-          </Typography>
-        </CardContent>
-      </Card>
-    </Box>
-  );
-};
+const KpiCardItem = ({ card }) => (
+  <Card sx={{ border: '1px solid', borderColor: 'divider', boxShadow: 'none', borderRadius: '10px', bgcolor: 'background.paper', height: '100%' }}>
+    <CardContent sx={{ px: 2.25, py: 1.75, '&:last-child': { pb: 1.75 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', '& svg': { fontSize: 16 } }}>
+        {card.icon}
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', fontWeight: 600 }}>{card.label}</Typography>
+      </Box>
+      <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '2.4rem', fontWeight: 700, color: 'text.primary', lineHeight: 1.05, mt: 0.5 }}>
+        <KpiValue value={card.value} />
+      </Typography>
+    </CardContent>
+  </Card>
+);
 
 // ── main component ────────────────────────────────────────────────────────────
 
@@ -444,7 +409,7 @@ const AdminDashboard = () => {
       if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Erreur'); }
       setReviewDialog({ open: false, app: null, status: '', notes: '' });
       await fetchApplications();
-      showSuccess(status === 'approved' ? 'Candidature approuvée ✓' : 'Candidature rejetée');
+      showSuccess(status === 'approved' ? 'Candidature approuvée' : 'Candidature rejetée');
     } catch (e) { showError(e.message); }
   };
 
@@ -781,11 +746,11 @@ const AdminDashboard = () => {
   ];
 
   const kpiCards = [
-    { label: 'Tournois',        value: tournaments.length,                                     icon: <TrophyIcon />,      color: '#3b82f6', bg: '#eff6ff' },
-    { label: 'Équipes',         value: teams.length,                                           icon: <GroupIcon />,       color: '#10b981', bg: '#ecfdf5' },
+    { label: 'Tournois',        value: tournaments.length,                                     icon: <TrophyIcon />,      color: '#c8410e', bg: '#fdeee6' },
+    { label: 'Équipes',         value: teams.length,                                           icon: <GroupIcon />,       color: '#2f7d4a', bg: '#e6efe7' },
     { label: 'Joueurs',         value: players.length,                                         icon: <PersonIcon />,      color: '#f59e0b', bg: '#fffbeb' },
-    { label: 'Matchs joués',    value: matches.filter(m => m.status === 'completed').length,   icon: <CheckCircleIcon />,  color: '#8b5cf6', bg: '#f5f3ff' },
-    { label: 'Candidatures',    value: applications.filter(a => a.status === 'pending').length, icon: <PendingIcon />,      color: '#f43f5e', bg: '#fff1f2' },
+    { label: 'Matchs joués',    value: matches.filter(m => m.status === 'completed').length,   icon: <CheckCircleIcon />,  color: '#c8410e', bg: '#fdeee6' },
+    { label: 'Candidatures',    value: applications.filter(a => a.status === 'pending').length, icon: <PendingIcon />,      color: '#b91c1c', bg: '#fff1f2' },
   ];
 
   // TopBar inliné dans le render (évite la perte de focus du champ de recherche)
@@ -793,13 +758,9 @@ const AdminDashboard = () => {
   // ── render: KPI cards ────────────────────────────────────────────────────────
 
   const KpiCards = () => (
-    <Grid container spacing={2} sx={{ mb: 3 }}>
-      {kpiCards.map((card, i) => (
-        <Grid item xs={6} md={3} key={i}>
-          <KpiCardItem card={card} index={i} />
-        </Grid>
-      ))}
-    </Grid>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: `repeat(${kpiCards.length}, 1fr)` }, gap: 2, mb: 3 }}>
+      {kpiCards.map((card, i) => <KpiCardItem card={card} key={i} />)}
+    </Box>
   );
 
   // ── render: sections ─────────────────────────────────────────────────────────
@@ -820,13 +781,13 @@ const AdminDashboard = () => {
                 return (
                   <TableRow key={t.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5, fontSize: '0.875rem' } }}>
                     <TableCell>
-                      <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: '#3b82f6' } }} onClick={() => navigate(`/admin/tournaments/${t.id}`)}>{t.name}</Typography>
+                      <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: 'text.primary' } }} onClick={() => navigate(`/admin/tournaments/${t.id}`)}>{t.name}</Typography>
                     </TableCell>
                     <TableCell><StatusChip status={t.status} /></TableCell>
                     <TableCell><Chip label={FORMAT_MAP[t.format] || t.format} size="small" variant="outlined" sx={{ borderRadius: 1, fontSize: '0.72rem' }} /></TableCell>
                     <TableCell sx={{ color: 'text.secondary' }}>{t.startDate ? new Date(t.startDate).toLocaleDateString('fr-FR') : '—'}</TableCell>
                     <TableCell sx={{ color: 'text.secondary' }}>{t.endDate ? new Date(t.endDate).toLocaleDateString('fr-FR') : '—'}</TableCell>
-                    <TableCell><Typography sx={{ fontWeight: 700, color: teamCount > 0 ? '#10b981' : '#94a3b8', fontSize: '0.875rem' }}>{teamCount}</Typography></TableCell>
+                    <TableCell><Typography sx={{ fontWeight: 700, color: teamCount > 0 ? '#2f7d4a' : '#9d978a', fontSize: '0.875rem' }}>{teamCount}</Typography></TableCell>
                     <TableCell>
                       <RowActions
                         onView={() => navigate(`/admin/tournaments/${t.id}`)}
@@ -862,12 +823,12 @@ const AdminDashboard = () => {
                   <TableRow key={t.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#dbeafe', color: '#1e40af', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(t.name)}</Avatar>
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: '#3b82f6' } }} onClick={() => navigate(`/admin/teams/${t.id}`)}>{t.name}</Typography>
+                        <Scarf team={t} size="lg" />
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: 'text.primary' } }} onClick={() => navigate(`/admin/teams/${t.id}`)}>{t.name}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{tournament?.name || <Typography fontSize="0.875rem" color="text.secondary" fontStyle="italic">Non assigné</Typography>}</TableCell>
-                    <TableCell><Typography sx={{ fontWeight: 700, color: teamPlayers.length > 0 ? '#10b981' : '#94a3b8', fontSize: '0.875rem' }}>{teamPlayers.length}</Typography></TableCell>
+                    <TableCell><Typography sx={{ fontWeight: 700, color: teamPlayers.length > 0 ? '#2f7d4a' : '#9d978a', fontSize: '0.875rem' }}>{teamPlayers.length}</Typography></TableCell>
                     <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{captain?.name || '—'}</TableCell>
                     <TableCell>
                       <RowActions
@@ -902,10 +863,10 @@ const AdminDashboard = () => {
                   <TableRow key={p.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.25 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#f0fdf4', color: '#166534', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(p.name)}</Avatar>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#e6efe7', color: '#2f7d4a', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(p.name)}</Avatar>
                         <Box>
-                          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: '#3b82f6' } }} onClick={() => navigate(`/admin/players/${p.id}`)}>{p.name}</Typography>
-                          {p.isCaptain && <Typography sx={{ fontSize: '0.68rem', color: '#f59e0b', fontWeight: 600 }}>Capitaine</Typography>}
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: 'text.primary' } }} onClick={() => navigate(`/admin/players/${p.id}`)}>{p.name}</Typography>
+                          {p.isCaptain && <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', fontWeight: 600 }}>Capitaine</Typography>}
                         </Box>
                       </Box>
                     </TableCell>
@@ -913,7 +874,7 @@ const AdminDashboard = () => {
                     <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem', fontWeight: 600 }}>{p.jerseyNumber ? `#${p.jerseyNumber}` : '—'}</TableCell>
                     <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{team?.name || '—'}</TableCell>
                     <TableCell>
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: p.isActive !== false ? '#10b981' : '#ef4444', display: 'inline-block', mr: 0.75 }} />
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: p.isActive !== false ? '#2f7d4a' : '#ef4444', display: 'inline-block', mr: 0.75 }} />
                       <Typography component="span" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{p.isActive !== false ? 'Actif' : 'Inactif'}</Typography>
                     </TableCell>
                     <TableCell>
@@ -949,7 +910,7 @@ const AdminDashboard = () => {
                   <TableRow key={c.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#fdf4ff', color: '#7e22ce', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(c.name)}</Avatar>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#fdeee6', color: '#a3330a', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(c.name)}</Avatar>
                         <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>{c.name}</Typography>
                       </Box>
                     </TableCell>
@@ -983,7 +944,7 @@ const AdminDashboard = () => {
                 <TableRow key={p.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.25 } }}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 30, height: 30, bgcolor: '#f0fdf4', color: '#166534', fontSize: '0.7rem', fontWeight: 700 }}>{getInitials(p.name)}</Avatar>
+                      <Avatar sx={{ width: 30, height: 30, bgcolor: '#e6efe7', color: '#2f7d4a', fontSize: '0.7rem', fontWeight: 700 }}>{getInitials(p.name)}</Avatar>
                       <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name}</Typography>
                     </Box>
                   </TableCell>
@@ -994,7 +955,7 @@ const AdminDashboard = () => {
                   <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{p.stats?.minutesPlayed ?? 0} min</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Modifier les statistiques">
-                      <IconButton size="small" onClick={() => handleEditPlayerStats(p)} sx={{ color: 'text.secondary', '&:hover': { color: '#3b82f6' } }}>
+                      <IconButton size="small" onClick={() => handleEditPlayerStats(p)} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}>
                         <AssessmentIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </Tooltip>
@@ -1030,11 +991,11 @@ const AdminDashboard = () => {
 
                       if (hasTournament) {
                         const hasActive = onDay.some(t => { const e = t.endDate ? dayjs(t.endDate) : dayjs(t.startDate); return !e.isBefore(dayjs(), 'day') && t.status !== 'completed'; });
-                        const color = hasActive ? '#3b82f6' : '#64748b';
+                        const color = hasActive ? '#c8410e' : '#6f6a5f';
                         return (
                           <Box sx={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
                             <PickersDay day={day} {...other} sx={{ bgcolor: color, color: 'white', fontWeight: 700, '&:hover': { bgcolor: color, opacity: 0.85 }, '&.Mui-selected': { bgcolor: color, color: 'white' } }} />
-                            {hasMatch && <Box sx={{ position: 'absolute', bottom: -3, width: 5, height: 5, borderRadius: '50%', bgcolor: '#f59e0b' }} />}
+                            {hasMatch && <Box sx={{ position: 'absolute', bottom: -3, width: 5, height: 5, borderRadius: '50%', bgcolor: '#ff5a1f' }} />}
                           </Box>
                         );
                       }
@@ -1043,7 +1004,7 @@ const AdminDashboard = () => {
                       return (
                         <Box sx={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
                           <PickersDay day={day} {...other} />
-                          <Box sx={{ position: 'absolute', bottom: -3, width: 5, height: 5, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                          <Box sx={{ position: 'absolute', bottom: -3, width: 5, height: 5, borderRadius: '50%', bgcolor: '#ff5a1f' }} />
                         </Box>
                       );
                     }}}
@@ -1061,9 +1022,9 @@ const AdminDashboard = () => {
       <Grid item xs={12} md={7}>
         <Grid container spacing={2} sx={{ mb: 2 }}>
           {[
-            { label: 'À venir',  cat: 'upcoming', color: '#3b82f6', bg: '#eff6ff' },
-            { label: 'En cours', cat: 'ongoing',  color: '#10b981', bg: '#ecfdf5' },
-            { label: 'Terminés', cat: 'past',     color: '#64748b', bg: '#f8fafc' },
+            { label: 'À venir',  cat: 'upcoming', color: '#c8410e', bg: '#fdeee6' },
+            { label: 'En cours', cat: 'ongoing',  color: '#2f7d4a', bg: '#e6efe7' },
+            { label: 'Terminés', cat: 'past',     color: '#6f6a5f', bg: '#f6f4ee' },
           ].map(({ label, cat, color, bg }) => (
             <Grid item xs={4} key={cat}>
               <Card sx={{ border: '1px solid', borderColor: 'divider', borderLeft: `3px solid ${color}`, boxShadow: 'none', borderRadius: 2 }}>
@@ -1108,7 +1069,7 @@ const AdminDashboard = () => {
             <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.9rem' }}>
               Matchs — {selectedDate.format('DD/MM/YYYY')}
               {matchesOnSelected.length > 0 && (
-                <Chip label={matchesOnSelected.length} size="small" sx={{ ml: 1, fontWeight: 700, fontSize: '0.7rem', height: 18, bgcolor: '#f59e0b', color: 'white' }} />
+                <Chip label={matchesOnSelected.length} size="small" sx={{ ml: 1, fontWeight: 700, fontSize: '0.7rem', height: 18, bgcolor: '#1d2320', color: 'white' }} />
               )}
             </Typography>
           </Box>
@@ -1120,7 +1081,7 @@ const AdminDashboard = () => {
                   <TableHead2 cols={[{ label: 'Match' }, { label: 'Heure' }, { label: 'Statut' }]} />
                   <TableBody>
                     {matchesOnSelected.map(m => {
-                      const st = MATCH_STATUS[m.status] || { label: m.status, color: '#64748b' };
+                      const st = MATCH_STATUS[m.status] || { label: m.status, color: '#6f6a5f' };
                       const homeTeam = m.homeTeam?.name || m.homeTeamId || '?';
                       const awayTeam = m.awayTeam?.name || m.awayTeamId || '?';
                       const score = m.status === 'completed'
@@ -1146,39 +1107,43 @@ const AdminDashboard = () => {
   // ── match helpers ─────────────────────────────────────────────────────────────
 
   const MATCH_STATUS = {
-    scheduled:   { label: 'Planifié',    color: '#3b82f6', bg: '#eff6ff' },
-    in_progress: { label: 'En cours',    color: '#f59e0b', bg: '#fffbeb' },
-    completed:   { label: 'Terminé',     color: '#10b981', bg: '#ecfdf5' },
-    postponed:   { label: 'Reporté',     color: '#8b5cf6', bg: '#f5f3ff' },
-    cancelled:   { label: 'Annulé',      color: '#ef4444', bg: '#fef2f2' },
+    scheduled:   { label: 'Planifié',    color: '#57534a', bg: '#ecebe4' },
+    in_progress: { label: 'En direct',   color: '#a3330a', bg: '#fdeee6' },
+    half_time:   { label: 'Mi-temps',    color: '#a3330a', bg: '#fdeee6' },
+    completed:   { label: 'Terminé',     color: '#1d2320', bg: '#e3e0d6' },
+    postponed:   { label: 'Reporté',     color: '#92400e', bg: '#fef3c7' },
+    cancelled:   { label: 'Annulé',      color: '#991b1b', bg: '#fee2e2' },
   };
 
   const EVENT_CFG = {
-    goal:          { label: '⚽ But',             color: '#10b981' },
-    penalty_goal:  { label: '⚽ But (péna.)',      color: '#059669' },
-    own_goal:      { label: '⚽ CSC',              color: '#ef4444' },
-    assist:        { label: '🎯 Passe D.',          color: '#3b82f6' },
-    yellow_card:   { label: '🟨 Carton jaune',     color: '#f59e0b' },
-    red_card:      { label: '🟥 Carton rouge',     color: '#ef4444' },
-    substitution:  { label: '↕ Remplacement',      color: '#8b5cf6' },
-    injury:        { label: '🤕 Blessure',          color: '#f97316' },
+    goal:          { label: 'But',             color: '#2f7d4a' },
+    penalty_goal:  { label: 'But (péna.)',      color: '#2f7d4a' },
+    own_goal:      { label: 'CSC',              color: '#ef4444' },
+    assist:        { label: 'Passe D.',          color: '#c8410e' },
+    yellow_card:   { label: 'Carton jaune',     color: '#f59e0b' },
+    red_card:      { label: 'Carton rouge',     color: '#ef4444' },
+    substitution:  { label: '↕ Remplacement',      color: '#c8410e' },
+    injury:        { label: 'Blessure',          color: '#c8410e' },
   };
 
   const MatchStatusBadge = ({ status }) => {
-    const cfg = MATCH_STATUS[status] || { label: status, color: '#64748b', bg: '#f8fafc' };
-    return <Chip label={cfg.label} size="small" sx={{ borderRadius: 1, fontWeight: 600, fontSize: '0.72rem', bgcolor: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30` }} />;
+    const cfg = MATCH_STATUS[status] || { label: status, color: '#6f6a5f', bg: '#f6f4ee' };
+    return <Chip label={cfg.label} size="small" sx={{ borderRadius: 1, fontWeight: 600, fontSize: '0.72rem', bgcolor: cfg.bg, color: cfg.color, border: 'none' }} />;
   };
 
   const MatchScoreBox = ({ m }) => {
     if (m.status === 'scheduled' || m.status === 'postponed' || m.status === 'cancelled') {
-      return <Typography sx={{ color: '#94a3b8', fontSize: '0.875rem' }}>vs</Typography>;
+      return (
+        <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: '1.05rem', color: 'text.secondary' }}>
+          {m.date ? new Date(m.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '–'}
+        </Typography>
+      );
     }
+    const live = ['in_progress', 'half_time'].includes(m.status);
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: m.homeTeamScore > m.awayTeamScore ? '#10b981' : m.homeTeamScore < m.awayTeamScore ? '#ef4444' : '#64748b' }}>{m.homeTeamScore ?? 0}</Typography>
-        <Typography sx={{ color: '#94a3b8', fontWeight: 600 }}>–</Typography>
-        <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: m.awayTeamScore > m.homeTeamScore ? '#10b981' : m.awayTeamScore < m.homeTeamScore ? '#ef4444' : '#64748b' }}>{m.awayTeamScore ?? 0}</Typography>
-      </Box>
+      <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: '1.45rem', lineHeight: 1, letterSpacing: '0.02em', color: live ? '#c8410e' : 'text.primary', whiteSpace: 'nowrap' }}>
+        {m.homeTeamScore ?? 0} – {m.awayTeamScore ?? 0}
+      </Typography>
     );
   };
 
@@ -1196,6 +1161,18 @@ const AdminDashboard = () => {
     acc[key][round].push(m);
     return acc;
   }, {});
+
+  // Journées à jouer (ou en direct) d'abord, dans l'ordre ; puis les journées terminées, la plus récente en tête
+  const roundDone = (ms) => ms.every(m => ['completed', 'cancelled'].includes(m.status));
+  const roundLive = (ms) => ms.some(m => ['in_progress', 'half_time'].includes(m.status));
+  const roundNo = (label) => parseInt(String(label).replace(/D/g, '')) || 0;
+  const orderRounds = (rounds) => Object.entries(rounds).sort(([a, ma], [b, mb]) => {
+    const da = roundDone(ma), db = roundDone(mb);
+    if (da !== db) return da ? 1 : -1;
+    return da ? roundNo(b) - roundNo(a) : roundNo(a) - roundNo(b);
+  });
+  const orderTournaments = (groups) => Object.entries(groups).sort(([, ra], [, rb]) =>
+    Number(Object.values(ra).every(roundDone)) - Number(Object.values(rb).every(roundDone)));
 
   const MatchesSection = () => (
     <Box>
@@ -1224,49 +1201,59 @@ const AdminDashboard = () => {
           </Typography>
         </Card>
       ) : (
-        Object.entries(matchGroups).map(([tournamentName, rounds]) => (
+        orderTournaments(matchGroups).map(([tournamentName, rounds]) => (
           <Box key={tournamentName} sx={{ mb: 3 }}>
-            <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography component="h2" sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: '1.35rem', color: 'text.primary', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
               <TrophyIcon sx={{ fontSize: 14 }} /> {tournamentName}
             </Typography>
-            {Object.entries(rounds).map(([round, roundMatches]) => (
+            {orderRounds(rounds).map(([round, roundMatches]) => (
               <Box key={round} sx={{ mb: 2 }}>
                 {Object.keys(rounds).length > 1 && (
-                  <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, mb: 1, pl: 0.5 }}>{round}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 1, pl: 0.5 }}>
+                    <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '1.1rem', color: 'text.primary', fontWeight: 700 }}>{round}</Typography>
+                    <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+                      {roundMatches.filter(m => m.status === 'completed').length}/{roundMatches.length} joués
+                    </Typography>
+                    {roundLive(roundMatches) && (
+                      <Typography sx={{ fontSize: '0.8rem', color: '#c8410e', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box component="span" sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff5a1f' }} /> En direct
+                      </Typography>
+                    )}
+                  </Box>
                 )}
                 <Card sx={{ border: '1px solid', borderColor: 'divider', boxShadow: 'none', borderRadius: 2 }}>
                   <TableContainer>
-                    <Table>
-                      <TableHead2 cols={[{ label: 'Date' }, { label: 'Domicile' }, { label: 'Score' }, { label: 'Visiteur' }, { label: 'Lieu' }, { label: 'Délégué' }, { label: 'Statut' }, { label: 'Actions', align: 'right' }]} />
+                    <Table sx={{ tableLayout: 'fixed', minWidth: 1100 }}>
+                      <TableHead2 cols={[{ label: 'Date', width: 84 }, { label: 'Domicile', align: 'right', width: '20%' }, { label: 'Score', align: 'center', width: 96 }, { label: 'Visiteur', width: '20%' }, { label: 'Lieu', width: '14%' }, { label: 'Délégué', width: 100 }, { label: 'Statut', width: 96 }, { label: 'Actions', align: 'right', width: 172 }]} />
                       <TableBody>
                         {roundMatches.map(m => (
-                          <TableRow key={m.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
+                          <TableRow key={m.id} sx={{ '& td': { py: 1.25 }, ...(['in_progress', 'half_time'].includes(m.status) && { '& td': { py: 1.25, bgcolor: 'rgba(255,90,31,0.07)' } }) }}>
                             <TableCell>
-                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: 'text.primary' }}>
+                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: 'text.primary', whiteSpace: 'nowrap' }}>
                                 {m.date ? new Date(m.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '—'}
                               </Typography>
-                              <Typography sx={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                              <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
                                 {m.date ? new Date(m.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Avatar sx={{ width: 26, height: 26, bgcolor: '#dbeafe', color: '#1e40af', fontSize: '0.65rem', fontWeight: 700 }}>{getInitials(m.homeTeam?.name)}</Avatar>
-                                <Typography sx={{ fontWeight: m.winnerTeamId === m.homeTeamId ? 700 : 400, fontSize: '0.875rem', color: m.winnerTeamId === m.homeTeamId ? '#10b981' : 'text.primary' }}>
-                                  {m.homeTeam?.name || '?'}{m.status === 'completed' && m.winnerTeamId === m.homeTeamId && m.homeTeamScore === m.awayTeamScore ? ' (t.a.b.)' : ''}
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, justifyContent: 'flex-end', textAlign: 'right' }}>
+                                <Typography noWrap sx={{ fontWeight: m.winnerTeamId === m.homeTeamId ? 700 : 500, fontSize: '0.9rem', color: 'text.primary', minWidth: 0 }}>
+                                  {m.homeTeam?.name || 'À désigner'}{m.status === 'completed' && m.winnerTeamId === m.homeTeamId && m.homeTeamScore === m.awayTeamScore ? ' (t.a.b.)' : ''}
                                 </Typography>
+                                <Scarf team={m.homeTeam} />
                               </Box>
                             </TableCell>
                             <TableCell align="center"><MatchScoreBox m={m} /></TableCell>
                             <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Avatar sx={{ width: 26, height: 26, bgcolor: '#fee2e2', color: '#991b1b', fontSize: '0.65rem', fontWeight: 700 }}>{getInitials(m.awayTeam?.name)}</Avatar>
-                                <Typography sx={{ fontWeight: m.winnerTeamId === m.awayTeamId ? 700 : 400, fontSize: '0.875rem', color: m.winnerTeamId === m.awayTeamId ? '#10b981' : 'text.primary' }}>
-                                  {m.awayTeam?.name || '?'}{m.status === 'completed' && m.winnerTeamId === m.awayTeamId && m.homeTeamScore === m.awayTeamScore ? ' (t.a.b.)' : ''}
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                                <Scarf team={m.awayTeam} />
+                                <Typography noWrap sx={{ fontWeight: m.winnerTeamId === m.awayTeamId ? 700 : 500, fontSize: '0.9rem', color: 'text.primary', minWidth: 0 }}>
+                                  {m.awayTeam?.name || 'À désigner'}{m.status === 'completed' && m.winnerTeamId === m.awayTeamId && m.homeTeamScore === m.awayTeamScore ? ' (t.a.b.)' : ''}
                                 </Typography>
                               </Box>
                             </TableCell>
-                            <TableCell sx={{ color: 'text.secondary', fontSize: '0.8rem', maxWidth: 120 }}>
+                            <TableCell sx={{ color: 'text.secondary', fontSize: '0.8rem', maxWidth: 220 }}>
                               <Typography noWrap sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{m.location || '—'}</Typography>
                             </TableCell>
                             <TableCell sx={{ maxWidth: 140 }}>
@@ -1277,22 +1264,22 @@ const AdminDashboard = () => {
                               <Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'flex-end', alignItems: 'center' }}>
                                 {(m.status === 'scheduled' || m.status === 'in_progress' || m.status === 'half_time') && (
                                   <Tooltip title="Mode Live">
-                                    <IconButton size="small" onClick={() => navigate(`/admin/matches/${m.id}/live`)} sx={{ color: m.status === 'in_progress' ? '#10b981' : 'text.secondary', '&:hover': { color: '#10b981' } }}>
+                                    <IconButton size="small" onClick={() => navigate(`/admin/matches/${m.id}/live`)} sx={{ color: m.status === 'in_progress' ? '#c8410e' : 'text.secondary', '&:hover': { color: '#c8410e' } }}>
                                       <FiberManualRecordIcon sx={{ fontSize: 13, ...(m.status === 'in_progress' && { animation: 'livePulse 1.5s infinite' }) }} />
                                     </IconButton>
                                   </Tooltip>
                                 )}
                                 <Tooltip title="Modifier le match">
-                                  <IconButton size="small" onClick={() => handleEditMatch(m)} sx={{ color: 'text.secondary', '&:hover': { color: '#f59e0b' } }}><EditIcon sx={{ fontSize: 15 }} /></IconButton>
+                                  <IconButton size="small" onClick={() => handleEditMatch(m)} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}><EditIcon sx={{ fontSize: 15 }} /></IconButton>
                                 </Tooltip>
                                 <Tooltip title="Saisir le résultat">
-                                  <IconButton size="small" onClick={() => openResultsDialog(m)} sx={{ color: 'text.secondary', '&:hover': { color: '#10b981' } }}><ScoreIcon sx={{ fontSize: 15 }} /></IconButton>
+                                  <IconButton size="small" onClick={() => openResultsDialog(m)} sx={{ color: 'text.secondary', '&:hover': { color: '#c8410e' } }}><ScoreIcon sx={{ fontSize: 15 }} /></IconButton>
                                 </Tooltip>
                                 <Tooltip title="Événements du match">
-                                  <IconButton size="small" onClick={() => openEventsDialog(m)} sx={{ color: 'text.secondary', '&:hover': { color: '#3b82f6' } }}><TimelineIcon sx={{ fontSize: 15 }} /></IconButton>
+                                  <IconButton size="small" onClick={() => openEventsDialog(m)} sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}><TimelineIcon sx={{ fontSize: 15 }} /></IconButton>
                                 </Tooltip>
                                 <Tooltip title="Supprimer">
-                                  <IconButton size="small" onClick={() => openConfirm('Supprimer le match', `Supprimer ce match entre "${m.homeTeam?.name}" et "${m.awayTeam?.name}" ?`, () => handleDeleteMatch(m))} sx={{ color: 'text.secondary', '&:hover': { color: '#ef4444' } }}><DeleteIcon sx={{ fontSize: 15 }} /></IconButton>
+                                  <IconButton size="small" onClick={() => openConfirm('Supprimer le match', `Supprimer ce match entre "${m.homeTeam?.name}" et "${m.awayTeam?.name}" ?`, () => handleDeleteMatch(m))} sx={{ color: 'text.secondary', '&:hover': { color: '#b91c1c' } }}><DeleteIcon sx={{ fontSize: 15 }} /></IconButton>
                                 </Tooltip>
                               </Box>
                             </TableCell>
@@ -1313,13 +1300,13 @@ const AdminDashboard = () => {
   // ── render: Applications ─────────────────────────────────────────────────────
 
   const APP_STATUS = {
-    pending:  { label: 'En attente',  color: '#f59e0b', bg: '#fffbeb', icon: <PendingIcon sx={{ fontSize: 14 }} /> },
-    approved: { label: 'Approuvée',   color: '#16a34a', bg: '#f0fdf4', icon: <ApproveIcon sx={{ fontSize: 14 }} /> },
+    pending:  { label: 'En attente',  color: '#92400e', bg: '#fef3c7', icon: <PendingIcon sx={{ fontSize: 14 }} /> },
+    approved: { label: 'Approuvée',   color: '#2f7d4a', bg: '#e6efe7', icon: <ApproveIcon sx={{ fontSize: 14 }} /> },
     rejected: { label: 'Rejetée',     color: '#dc2626', bg: '#fef2f2', icon: <RejectIcon  sx={{ fontSize: 14 }} /> },
   };
 
   const AppStatusBadge = ({ status }) => {
-    const cfg = APP_STATUS[status] || { label: status, color: '#64748b', bg: '#f1f5f9', icon: null };
+    const cfg = APP_STATUS[status] || { label: status, color: '#6f6a5f', bg: '#ecebe4', icon: null };
     return (
       <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: cfg.bg,
         color: cfg.color, borderRadius: 1, px: 1, py: 0.3, fontWeight: 600, fontSize: '0.72rem' }}>
@@ -1370,7 +1357,7 @@ const AdminDashboard = () => {
                   <TableRow key={app.id} hover>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 28, height: 28, bgcolor: '#3b82f6', fontSize: '0.65rem', fontWeight: 700 }}>
+                        <Avatar sx={{ width: 28, height: 28, bgcolor: '#c8410e', fontSize: '0.65rem', fontWeight: 700 }}>
                           {getInitials(app.team?.name)}
                         </Avatar>
                         <Typography fontSize="0.85rem" fontWeight={600}>{app.team?.name || '—'}</Typography>
@@ -1402,7 +1389,7 @@ const AdminDashboard = () => {
                           <Tooltip title="Approuver">
                             <IconButton size="small"
                               onClick={() => setReviewDialog({ open: true, app, status: 'approved', notes: '' })}
-                              sx={{ color: '#16a34a', '&:hover': { bgcolor: '#f0fdf4' } }}>
+                              sx={{ color: '#2f7d4a', '&:hover': { bgcolor: '#e6efe7' } }}>
                               <ApproveIcon sx={{ fontSize: 17 }} />
                             </IconButton>
                           </Tooltip>
@@ -1457,7 +1444,7 @@ const AdminDashboard = () => {
                 <TableRow key={ref.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ width: 32, height: 32, bgcolor: '#fff7ed', color: '#c2410c', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(ref.name)}</Avatar>
+                      <Avatar sx={{ width: 32, height: 32, bgcolor: '#fdeee6', color: '#c8410e', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(ref.name)}</Avatar>
                       <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>{ref.name}</Typography>
                     </Box>
                   </TableCell>
@@ -1470,15 +1457,15 @@ const AdminDashboard = () => {
                   <TableCell>
                     <Chip label={ref.isActive ? 'Actif' : 'Inactif'} size="small"
                       sx={{ fontSize: '0.72rem', height: 20,
-                        bgcolor: ref.isActive ? '#f0fdf4' : '#fef2f2',
-                        color: ref.isActive ? '#166534' : '#dc2626' }} />
+                        bgcolor: ref.isActive ? '#e6efe7' : '#fef2f2',
+                        color: ref.isActive ? '#2f7d4a' : '#dc2626' }} />
                   </TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
                       <Tooltip title="Modifier">
                         <IconButton size="small"
                           onClick={() => { setEditingReferee(ref); setRefereeForm({ name: ref.name, email: ref.email, phone: ref.phone || '' }); setRefereeDialog(true); }}
-                          sx={{ color: 'text.secondary', '&:hover': { color: '#3b82f6' } }}>
+                          sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}>
                           <EditIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </Tooltip>
@@ -1521,7 +1508,7 @@ const AdminDashboard = () => {
                   <TableRow key={d.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#ecfeff', color: '#0e7490', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(d.name)}</Avatar>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#fdeee6', color: '#a3330a', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(d.name)}</Avatar>
                         <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>{d.name}</Typography>
                       </Box>
                     </TableCell>
@@ -1537,7 +1524,7 @@ const AdminDashboard = () => {
                     </TableCell>
                     <TableCell>
                       <Chip label={d.isActive ? 'Actif' : 'Inactif'} size="small"
-                        sx={{ fontSize: '0.72rem', height: 20, bgcolor: d.isActive ? '#f0fdf4' : '#fef2f2', color: d.isActive ? '#166534' : '#dc2626' }} />
+                        sx={{ fontSize: '0.72rem', height: 20, bgcolor: d.isActive ? '#e6efe7' : '#fef2f2', color: d.isActive ? '#2f7d4a' : '#dc2626' }} />
                     </TableCell>
                     <TableCell>
                       <RowActions
@@ -1562,31 +1549,31 @@ const AdminDashboard = () => {
   const statsFieldsByPosition = (pos) => {
     const p = (pos || '').toLowerCase();
     if (p.includes('gardien')) return [
-      { label: 'Arrêts', color: '#1e40af', fields: [['Arrêts', 'saves'], ['Clean sheets', 'cleanSheets'], ['Buts encaissés', 'goalsConceded'], ['Penalties arrêtés', 'penaltiesSaved']] },
-      { label: 'Jeu au pied', color: '#065f46', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses']] },
+      { label: 'Arrêts', color: '#a3330a', fields: [['Arrêts', 'saves'], ['Clean sheets', 'cleanSheets'], ['Buts encaissés', 'goalsConceded'], ['Penalties arrêtés', 'penaltiesSaved']] },
+      { label: 'Jeu au pied', color: '#2f7d4a', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses']] },
       { label: 'Défense', color: '#92400e', fields: [['Dégagements', 'clearances'], ['Duels aériens gagnés', 'aerialDuelsWon']] },
-      { label: 'Discipline & Temps', color: '#6b21a8', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
+      { label: 'Discipline & Temps', color: '#a3330a', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
     ];
     if (p.includes('defenseur')) return [
-      { label: 'Défense', color: '#1e40af', fields: [['Tacles', 'tackles'], ['Interceptions', 'interceptions'], ['Dégagements', 'clearances'], ['Duels gagnés', 'duelsWon'], ['Duels aériens gagnés', 'aerialDuelsWon']] },
-      { label: 'Passes', color: '#065f46', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses'], ['Passes décisives', 'assists']] },
+      { label: 'Défense', color: '#a3330a', fields: [['Tacles', 'tackles'], ['Interceptions', 'interceptions'], ['Dégagements', 'clearances'], ['Duels gagnés', 'duelsWon'], ['Duels aériens gagnés', 'aerialDuelsWon']] },
+      { label: 'Passes', color: '#2f7d4a', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses'], ['Passes décisives', 'assists']] },
       { label: 'Attaque', color: '#991b1b', fields: [['Buts', 'goals']] },
       { label: 'Fautes', color: '#92400e', fields: [['Fautes commises', 'foulsCommitted'], ['Fautes subies', 'foulsSuffered']] },
-      { label: 'Discipline & Temps', color: '#6b21a8', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
+      { label: 'Discipline & Temps', color: '#a3330a', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
     ];
     if (p.includes('milieu')) return [
-      { label: 'Passes', color: '#065f46', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses'], ['Passes décisives', 'assists']] },
+      { label: 'Passes', color: '#2f7d4a', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses'], ['Passes décisives', 'assists']] },
       { label: 'Attaque', color: '#991b1b', fields: [['Buts', 'goals'], ['Tirs', 'shots'], ['Tirs cadrés', 'shotsOnTarget'], ['Dribbles', 'dribbles']] },
-      { label: 'Défense', color: '#1e40af', fields: [['Tacles', 'tackles'], ['Interceptions', 'interceptions']] },
+      { label: 'Défense', color: '#a3330a', fields: [['Tacles', 'tackles'], ['Interceptions', 'interceptions']] },
       { label: 'Fautes', color: '#92400e', fields: [['Fautes commises', 'foulsCommitted'], ['Fautes subies', 'foulsSuffered']] },
-      { label: 'Discipline & Temps', color: '#6b21a8', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
+      { label: 'Discipline & Temps', color: '#a3330a', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
     ];
     // attaquant (default)
     return [
       { label: 'Attaque', color: '#991b1b', fields: [['Buts', 'goals'], ['Passes décisives', 'assists'], ['Tirs', 'shots'], ['Tirs cadrés', 'shotsOnTarget'], ['Dribbles', 'dribbles'], ['Hors-jeu', 'offsides']] },
-      { label: 'Passes', color: '#065f46', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses']] },
+      { label: 'Passes', color: '#2f7d4a', fields: [['Passes', 'passes'], ['Passes clés', 'keyPasses']] },
       { label: 'Fautes', color: '#92400e', fields: [['Fautes commises', 'foulsCommitted'], ['Fautes subies', 'foulsSuffered']] },
-      { label: 'Discipline & Temps', color: '#6b21a8', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
+      { label: 'Discipline & Temps', color: '#a3330a', fields: [['Cartons jaunes', 'yellowCards'], ['Cartons rouges', 'redCards'], ['Minutes jouées', 'minutesPlayed']] },
     ];
   };
 
@@ -1621,12 +1608,12 @@ const AdminDashboard = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
 
       {/* ── TopBar inline — ne pas extraire en composant pour éviter la perte de focus ── */}
-      <Box sx={{ height: 60, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', px: 3, gap: 2, position: 'sticky', top: 0, zIndex: 100 }}>
-        <Typography sx={{ fontWeight: 700, color: 'text.primary', fontSize: '1rem' }}>{navItems[activeSection]?.label}</Typography>
+      <Box sx={{ height: 68, bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', px: 4, gap: 2, position: 'sticky', top: 0, zIndex: 100 }}>
+        <Typography component="h1" sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, color: 'text.primary', fontSize: '2rem', letterSpacing: '0.01em' }}>{navItems[activeSection]?.label}</Typography>
         <Box sx={{ flex: 1 }} />
         {activeSection < 4 && activeSection !== 7 && (
           <TextField size="small" placeholder="Rechercher…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: '#94a3b8' }} /></InputAdornment> }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: 'text.secondary' }} /></InputAdornment> }}
             sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.875rem' } }}
           />
         )}
@@ -1637,7 +1624,7 @@ const AdminDashboard = () => {
         </Tooltip>
       </Box>
 
-      <Box sx={{ p: 3, flex: 1 }}>
+      <Box sx={{ px: 4, py: 3, flex: 1 }}>
         <KpiCards />
         <ActiveSection />
       </Box>
@@ -1861,7 +1848,7 @@ const AdminDashboard = () => {
       <Dialog open={statsDialog} onClose={() => closeDlg(setStatsDialog, setEditingPlayerStats)} maxWidth="md" fullWidth sx={dlgSx}>
         <DialogTitle sx={dlgTitleSx}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <AssessmentIcon sx={{ color: '#3b82f6' }} />
+            <AssessmentIcon sx={{ color: '#c8410e' }} />
             <Box>
               <Typography fontWeight={700} fontSize="1rem">Statistiques — {editingPlayerStats?.name}</Typography>
               {editingPlayerStats?.position && (
@@ -1996,7 +1983,7 @@ const AdminDashboard = () => {
                   <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 1, fontWeight: 600 }}>{resultsTarget?.homeTeam?.name}</Typography>
                   <TextField type="number" value={resultsForm.homeTeamScore} onChange={e => setResultsForm(f => ({ ...f, homeTeamScore: e.target.value }))} inputProps={{ min: 0, style: { textAlign: 'center', fontSize: '2rem', fontWeight: 800, padding: '8px' } }} sx={{ width: 90 }} />
                 </Box>
-                <Typography sx={{ fontSize: '1.5rem', color: '#94a3b8', fontWeight: 700, flexShrink: 0 }}>–</Typography>
+                <Typography sx={{ fontSize: '1.5rem', color: 'text.secondary', fontWeight: 700, flexShrink: 0 }}>–</Typography>
                 <Box sx={{ flex: 1, textAlign: 'center' }}>
                   <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 1, fontWeight: 600 }}>{resultsTarget?.awayTeam?.name}</Typography>
                   <TextField type="number" value={resultsForm.awayTeamScore} onChange={e => setResultsForm(f => ({ ...f, awayTeamScore: e.target.value }))} inputProps={{ min: 0, style: { textAlign: 'center', fontSize: '2rem', fontWeight: 800, padding: '8px' } }} sx={{ width: 90 }} />
@@ -2008,7 +1995,7 @@ const AdminDashboard = () => {
               <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, mb: 1 }}>Score à la mi-temps</Typography>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <TextField size="small" type="number" label="Dom." value={resultsForm.halfTimeHomeScore} onChange={e => setResultsForm(f => ({ ...f, halfTimeHomeScore: e.target.value }))} inputProps={{ min: 0 }} sx={{ width: 80 }} />
-                <Typography sx={{ color: '#94a3b8' }}>–</Typography>
+                <Typography sx={{ color: 'text.secondary' }}>–</Typography>
                 <TextField size="small" type="number" label="Vis." value={resultsForm.halfTimeAwayScore} onChange={e => setResultsForm(f => ({ ...f, halfTimeAwayScore: e.target.value }))} inputProps={{ min: 0 }} sx={{ width: 80 }} />
               </Box>
             </Grid>
@@ -2051,7 +2038,7 @@ const AdminDashboard = () => {
                   <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>{eventsTarget.homeTeam?.name}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.25, bgcolor: 'background.default', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
                     <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{eventsTarget.homeTeamScore ?? 0}</Typography>
-                    <Typography sx={{ color: '#94a3b8', fontWeight: 600 }}>–</Typography>
+                    <Typography sx={{ color: 'text.secondary', fontWeight: 600 }}>–</Typography>
                     <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{eventsTarget.awayTeamScore ?? 0}</Typography>
                   </Box>
                   <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>{eventsTarget.awayTeam?.name}</Typography>
@@ -2074,7 +2061,7 @@ const AdminDashboard = () => {
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                   {[...matchEvents].sort((a, b) => a.minute - b.minute || (a.extraMinute || 0) - (b.extraMinute || 0)).map(ev => {
-                    const cfg = EVENT_CFG[ev.type] || { label: ev.type, color: '#64748b' };
+                    const cfg = EVENT_CFG[ev.type] || { label: ev.type, color: '#6f6a5f' };
                     const team = ev.isHomeTeam ? eventsTarget?.homeTeam?.name : eventsTarget?.awayTeam?.name;
                     return (
                       <Box key={ev.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.25, borderRadius: 1.5, bgcolor: 'background.default', border: '1px solid', borderColor: 'divider', '&:hover': { bgcolor: 'action.hover' } }}>
@@ -2089,11 +2076,11 @@ const AdminDashboard = () => {
                             {ev.relatedPlayerName || '—'} · {team}
                           </Typography>
                           {ev.type === 'substitution' && ev.substitutionPlayerOutName && (
-                            <Typography sx={{ fontSize: '0.72rem', color: '#94a3b8' }}>↕ {ev.substitutionPlayerOutName} → {ev.substitutionPlayerInName}</Typography>
+                            <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>↕ {ev.substitutionPlayerOutName} → {ev.substitutionPlayerInName}</Typography>
                           )}
-                          {ev.description && <Typography noWrap sx={{ fontSize: '0.72rem', color: '#94a3b8' }}>{ev.description}</Typography>}
+                          {ev.description && <Typography noWrap sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>{ev.description}</Typography>}
                         </Box>
-                        <IconButton size="small" onClick={() => openConfirm('Supprimer l\'événement', `Supprimer cet événement (${ev.minute}') ?`, () => handleDeleteEvent(ev.id))} sx={{ color: '#cbd5e1', '&:hover': { color: '#ef4444' }, flexShrink: 0 }}>
+                        <IconButton size="small" onClick={() => openConfirm('Supprimer l\'événement', `Supprimer cet événement (${ev.minute}') ?`, () => handleDeleteEvent(ev.id))} sx={{ color: '#c8c3b5', '&:hover': { color: '#b91c1c' }, flexShrink: 0 }}>
                           <DeleteIcon sx={{ fontSize: 14 }} />
                         </IconButton>
                       </Box>
@@ -2167,9 +2154,9 @@ const AdminDashboard = () => {
         <DialogTitle sx={dlgTitleSx}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              bgcolor: reviewDialog.status === 'approved' ? '#f0fdf4' : '#fef2f2' }}>
+              bgcolor: reviewDialog.status === 'approved' ? '#e6efe7' : '#fef2f2' }}>
               {reviewDialog.status === 'approved'
-                ? <ApproveIcon sx={{ fontSize: 17, color: '#16a34a' }} />
+                ? <ApproveIcon sx={{ fontSize: 17, color: '#2f7d4a' }} />
                 : <RejectIcon  sx={{ fontSize: 17, color: '#dc2626' }} />}
             </Box>
             {reviewDialog.status === 'approved' ? 'Approuver la candidature' : 'Rejeter la candidature'}

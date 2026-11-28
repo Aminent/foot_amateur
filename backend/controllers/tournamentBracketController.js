@@ -175,8 +175,8 @@ const getBracket = async (req, res) => {
   const matches = await Match.findAll({
       where: { tournamentId: id },
       include: [
-        { association: Match.associations.homeTeam, attributes: ['id', 'name'] },
-        { association: Match.associations.awayTeam, attributes: ['id', 'name'] }
+        { association: Match.associations.homeTeam, attributes: ['id', 'name', 'colors'] },
+        { association: Match.associations.awayTeam, attributes: ['id', 'name', 'colors'] }
       ],
       order: [['roundNumber', 'ASC'], ['matchIndex', 'ASC']]
     });

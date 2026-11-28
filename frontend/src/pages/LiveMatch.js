@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import EventIcon from '../components/Admin/EventIcon';
+import Scarf from '../components/Admin/Scarf';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Button, Chip, IconButton,
@@ -24,29 +26,25 @@ const BREAK_DURATION  = 15 * 60; // 15 min de pause
 const MATCH_DURATION  = 90 * 60; // 90 min total
 
 const EVENT_TYPES = [
-  { value: 'goal',         label: '⚽ But',             color: '#16a34a' },
-  { value: 'assist',       label: '🅰️ Passe décisive',   color: '#0284c7' },
-  { value: 'penalty_goal', label: '🎯 But sur penalty',  color: '#15803d' },
-  { value: 'own_goal',     label: '⚽ CSC',              color: '#dc2626' },
-  { value: 'yellow_card',  label: '🟨 Carton jaune',     color: '#ca8a04' },
-  { value: 'red_card',     label: '🟥 Carton rouge',      color: '#dc2626' },
-  { value: 'substitution', label: '🔄 Remplacement',      color: '#7c3aed' },
-  { value: 'injury',       label: '🚑 Blessure',          color: '#ea580c' },
+  { value: 'goal',         label: 'But',             color: '#2f7d4a' },
+  { value: 'assist',       label: 'Passe décisive',   color: '#c8410e' },
+  { value: 'penalty_goal', label: 'But sur penalty',  color: '#2f7d4a' },
+  { value: 'own_goal',     label: 'CSC',              color: '#dc2626' },
+  { value: 'yellow_card',  label: 'Carton jaune',     color: '#ca8a04' },
+  { value: 'red_card',     label: 'Carton rouge',      color: '#dc2626' },
+  { value: 'substitution', label: 'Remplacement',      color: '#c8410e' },
+  { value: 'injury',       label: 'Blessure',          color: '#c8410e' },
 ];
 
 const STATUS_LABELS = {
-  scheduled:   { label: 'Planifié',      color: '#3b82f6' },
-  in_progress: { label: '🔴 En direct',  color: '#16a34a' },
-  half_time:   { label: '⏸ Mi-temps',   color: '#ca8a04' },
-  completed:   { label: '✅ Terminé',    color: '#64748b' },
-  postponed:   { label: 'Reporté',       color: '#8b5cf6' },
+  scheduled:   { label: 'Planifié',      color: '#c8410e' },
+  in_progress: { label: 'En direct',  color: '#2f7d4a' },
+  half_time:   { label: 'Mi-temps',   color: '#ca8a04' },
+  completed:   { label: 'Terminé',    color: '#6f6a5f' },
+  postponed:   { label: 'Reporté',       color: '#c8410e' },
   cancelled:   { label: 'Annulé',        color: '#ef4444' },
 };
 
-const EVENT_ICON = {
-  goal: '⚽', penalty_goal: '🎯', own_goal: '⚽',
-  yellow_card: '🟨', red_card: '🟥', substitution: '🔄', injury: '🚑',
-};
 
 const NEEDS_PLAYER = ['goal', 'penalty_goal', 'yellow_card', 'red_card', 'assist'];
 
@@ -254,7 +252,7 @@ export default function LiveMatch() {
       setMatch(d.match);
       setDialogOpen(false);
       resetForm();
-      showToast('Événement ajouté ✓');
+      showToast('Événement ajouté');
     } catch (e) { showToast(e.message, true); }
     finally { setSubmitting(false); }
   };
@@ -299,7 +297,7 @@ export default function LiveMatch() {
 
   const homeTeam   = match.homeTeam?.name || 'Domicile';
   const awayTeam   = match.awayTeam?.name || 'Extérieur';
-  const statusCfg  = STATUS_LABELS[match.status] || { label: match.status, color: '#64748b' };
+  const statusCfg  = STATUS_LABELS[match.status] || { label: match.status, color: '#6f6a5f' };
   const canEdit    = !['completed', 'cancelled'].includes(match.status);
   const events     = [...(match.events || [])].sort((a, b) => b.minute - a.minute || b.id - a.id);
   const isSub      = eventType === 'substitution';
@@ -324,8 +322,8 @@ export default function LiveMatch() {
             </Typography>
           </Box>
           {timer.breakDone ? (
-            <Typography sx={{ color: '#f97316', fontWeight: 800, fontSize: '1.1rem', animation: 'liveP 1s infinite' }}>
-              ⚡ Reprise !
+            <Typography sx={{ color: '#c8410e', fontWeight: 800, fontSize: '1.1rem', animation: 'liveP 1s infinite' }}>
+              Reprise !
             </Typography>
           ) : (
             <>
@@ -341,7 +339,7 @@ export default function LiveMatch() {
                   }}
                 />
               </Box>
-              <Typography sx={{ color: '#94a3b8', fontSize: '0.7rem', mt: 0.3 }}>
+              <Typography sx={{ color: '#9d978a', fontSize: '0.7rem', mt: 0.3 }}>
                 Pause : {mins}min {secs}s restantes
               </Typography>
             </>
@@ -359,8 +357,8 @@ export default function LiveMatch() {
     return (
       <Box sx={{ textAlign: 'center', mt: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
-          <FiberManualRecordIcon sx={{ fontSize: 10, color: '#10b981', animation: 'liveP 1.5s infinite' }} />
-          <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <FiberManualRecordIcon sx={{ fontSize: 10, color: '#2f7d4a', animation: 'liveP 1.5s infinite' }} />
+          <Typography sx={{ color: '#9d978a', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: 1 }}>
             {halfLabel}
           </Typography>
         </Box>
@@ -368,13 +366,13 @@ export default function LiveMatch() {
         {timer.isExtra ? (
           // Temps additionnel
           <Box>
-            <Typography sx={{ color: '#f97316', fontWeight: 900, fontSize: '2rem', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            <Typography sx={{ color: '#c8410e', fontWeight: 900, fontSize: '2rem', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {timer.minutes}'
-              <Box component="span" sx={{ fontSize: '1.3rem', color: '#fb923c' }}>
+              <Box component="span" sx={{ fontSize: '1.3rem', color: '#ff8a5c' }}>
                 {' '}+{timer.extra}'
               </Box>
             </Typography>
-            <Typography sx={{ color: '#f97316', fontSize: '0.7rem', fontWeight: 700, mt: 0.3,
+            <Typography sx={{ color: '#c8410e', fontSize: '0.7rem', fontWeight: 700, mt: 0.3,
               textTransform: 'uppercase', letterSpacing: 1, animation: 'liveP 1.5s infinite' }}>
               ⏱ Temps additionnel
             </Typography>
@@ -382,16 +380,16 @@ export default function LiveMatch() {
         ) : (
           // Temps normal
           <Box>
-            <Typography sx={{ color: '#10b981', fontWeight: 900, fontSize: '2rem', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            <Typography sx={{ color: '#2f7d4a', fontWeight: 900, fontSize: '2rem', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {String(timer.minutes).padStart(2, '0')}:{String(timer.seconds).padStart(2, '0')}
             </Typography>
             <Box sx={{ mt: 0.5, mx: 2 }}>
               <LinearProgress
                 variant="determinate" value={progressPct}
                 sx={{ height: 4, borderRadius: 2,
-                  bgcolor: 'rgba(16,185,129,0.15)',
+                  bgcolor: 'rgba(47,125,74,0.15)',
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: progressPct > 90 ? '#f97316' : '#10b981',
+                    bgcolor: progressPct > 90 ? '#c8410e' : '#2f7d4a',
                     transition: 'none',
                   },
                 }}
@@ -410,7 +408,7 @@ export default function LiveMatch() {
     if (s === 'scheduled') return (
       <Button variant="contained" startIcon={<PlayCircleIcon />}
         onClick={handleStart}
-        sx={{ bgcolor: '#16a34a', '&:hover': { bgcolor: '#15803d' }, fontWeight: 700, borderRadius: 2, px: 3 }}>
+        sx={{ bgcolor: '#2f7d4a', '&:hover': { bgcolor: '#2f7d4a' }, fontWeight: 700, borderRadius: 2, px: 3 }}>
         Démarrer le match
       </Button>
     );
@@ -420,7 +418,7 @@ export default function LiveMatch() {
         <Button variant="contained" startIcon={<PauseCircleIcon />}
           onClick={handleHalfTime}
           sx={{ bgcolor: '#ca8a04', '&:hover': { bgcolor: '#a16207' }, fontWeight: 700, borderRadius: 2 }}>
-          ⏸ Mi-temps
+          Mi-temps
         </Button>
       </Box>
     );
@@ -429,12 +427,12 @@ export default function LiveMatch() {
       <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
         <Button variant="contained" startIcon={<PlayCircleIcon />}
           onClick={handleSecondHalf}
-          sx={{ bgcolor: '#16a34a', '&:hover': { bgcolor: '#15803d' }, fontWeight: 700, borderRadius: 2, px: 3 }}>
+          sx={{ bgcolor: '#2f7d4a', '&:hover': { bgcolor: '#2f7d4a' }, fontWeight: 700, borderRadius: 2, px: 3 }}>
           ▶ Reprendre — 2ème mi-temps
         </Button>
         {timer?.breakDone && (
-          <Typography sx={{ color: '#f97316', fontWeight: 700, fontSize: '0.85rem', animation: 'liveP 1s infinite' }}>
-            ⚡ Pause terminée !
+          <Typography sx={{ color: '#c8410e', fontWeight: 700, fontSize: '0.85rem', animation: 'liveP 1s infinite' }}>
+            Pause terminée !
           </Typography>
         )}
       </Box>
@@ -445,7 +443,7 @@ export default function LiveMatch() {
         <Button variant="contained"
           onClick={handleEnd}
           sx={{ bgcolor: '#dc2626', '&:hover': { bgcolor: '#b91c1c' }, fontWeight: 700, borderRadius: 2 }}>
-          🏁 Terminer le match
+          Terminer le match
         </Button>
       </Box>
     );
@@ -459,7 +457,7 @@ export default function LiveMatch() {
       {/* ── Header ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
         <IconButton onClick={() => navigate(-1)} size="small"><ArrowBackIcon /></IconButton>
-        <SportsSoccerIcon sx={{ color: '#3b82f6' }} />
+        <SportsSoccerIcon sx={{ color: '#c8410e' }} />
         <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', flex: 1 }}>
           Mode Live — {homeTeam} vs {awayTeam}
         </Typography>
@@ -477,20 +475,20 @@ export default function LiveMatch() {
       )}
 
       {/* ── Scoreboard ── */}
-      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)', borderRadius: 3, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+      <Card sx={{ mb: 3, background: '#1d2320', borderRadius: '10px', boxShadow: 'none' }}>
         <CardContent sx={{ p: 3, pb: '20px !important' }}>
           {match.location && (
-            <Typography sx={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', mb: 1.5 }}>
-              📍 {match.location}
+            <Typography sx={{ color: '#9d978a', fontSize: '0.8rem', textAlign: 'center', mb: 1.5 }}>
+              {match.location}
             </Typography>
           )}
 
           <Grid container alignItems="center" justifyContent="center" spacing={2}>
             {/* Home */}
             <Grid item xs={4} sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ width: 52, height: 52, bgcolor: '#3b82f6', mx: 'auto', mb: 1, fontSize: '1.2rem', fontWeight: 700 }}>{homeTeam[0]}</Avatar>
+              <Scarf team={match.homeTeam} size="lg" sx={{ display: 'block', mx: 'auto', mb: 1.5, width: 56, height: 22 }} />
               <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{homeTeam}</Typography>
-              <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem' }}>Domicile</Typography>
+              <Typography sx={{ color: '#9d978a', fontSize: '0.72rem' }}>Domicile</Typography>
             </Grid>
 
             {/* Score + timer */}
@@ -511,9 +509,9 @@ export default function LiveMatch() {
 
               {match.status === 'completed' && (
                 <Box>
-                  <Typography sx={{ color: '#64748b', fontSize: '0.78rem', mt: 0.5 }}>Match terminé</Typography>
+                  <Typography sx={{ color: '#6f6a5f', fontSize: '0.78rem', mt: 0.5 }}>Match terminé</Typography>
                   {(match.halfTimeHomeScore != null) && (
-                    <Typography sx={{ color: '#94a3b8', fontSize: '0.7rem' }}>
+                    <Typography sx={{ color: '#9d978a', fontSize: '0.7rem' }}>
                       Mi-temps : {match.halfTimeHomeScore} – {match.halfTimeAwayScore}
                     </Typography>
                   )}
@@ -523,9 +521,9 @@ export default function LiveMatch() {
 
             {/* Away */}
             <Grid item xs={4} sx={{ textAlign: 'center' }}>
-              <Avatar sx={{ width: 52, height: 52, bgcolor: '#ef4444', mx: 'auto', mb: 1, fontSize: '1.2rem', fontWeight: 700 }}>{awayTeam[0]}</Avatar>
+              <Scarf team={match.awayTeam} size="lg" sx={{ display: 'block', mx: 'auto', mb: 1.5, width: 56, height: 22 }} />
               <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{awayTeam}</Typography>
-              <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem' }}>Extérieur</Typography>
+              <Typography sx={{ color: '#9d978a', fontSize: '0.72rem' }}>Extérieur</Typography>
             </Grid>
           </Grid>
 
@@ -542,9 +540,9 @@ export default function LiveMatch() {
                   <Box key={p} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box sx={{
                       width: 8, height: 8, borderRadius: '50%',
-                      bgcolor: active ? '#10b981' : done ? '#3b82f6' : '#334155',
+                      bgcolor: active ? '#2f7d4a' : done ? '#c8410e' : '#3f3c36',
                     }} />
-                    <Typography sx={{ fontSize: '0.65rem', color: active ? '#10b981' : done ? '#3b82f6' : '#64748b', fontWeight: active ? 700 : 400 }}>
+                    <Typography sx={{ fontSize: '0.65rem', color: active ? '#2f7d4a' : done ? '#c8410e' : '#6f6a5f', fontWeight: active ? 700 : 400 }}>
                       {labels[i]}
                     </Typography>
                   </Box>
@@ -573,24 +571,24 @@ export default function LiveMatch() {
                 label={timer.isExtra ? `${timer.minutes}'+${timer.extra}'` : `${String(timer.minutes).padStart(2,'0')}:${String(timer.seconds).padStart(2,'0')}`}
                 size="small"
                 sx={{ fontWeight: 700, height: 20, fontSize: '0.7rem',
-                  bgcolor: timer.isExtra ? 'rgba(249,115,22,0.12)' : 'rgba(16,185,129,0.12)',
-                  color: timer.isExtra ? '#f97316' : '#10b981' }}
+                  bgcolor: timer.isExtra ? 'rgba(249,115,22,0.12)' : 'rgba(47,125,74,0.12)',
+                  color: timer.isExtra ? '#c8410e' : '#2f7d4a' }}
               />
             )}
           </Box>
           <CardContent sx={{ p: 2 }}>
             <Grid container spacing={2}>
-              {[{ side: 'home', name: homeTeam, color: '#3b82f6', icon: '🏠' },
-                { side: 'away', name: awayTeam, color: '#ef4444', icon: '✈️' }].map(({ side, name, color, icon }) => (
+              {[{ side: 'home', name: homeTeam, color: 'text.primary', icon: 'Domicile ·' },
+                { side: 'away', name: awayTeam, color: 'text.primary', icon: 'Extérieur ·' }].map(({ side, name, color, icon }) => (
                 <Grid item xs={12} sm={6} key={side}>
                   <Typography sx={{ fontWeight: 600, color, mb: 1, fontSize: '0.85rem' }}>{icon} {name}</Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {EVENT_TYPES.map(et => (
                       <Button key={et.value} size="small" variant="outlined"
                         onClick={() => openDialog(side, et.value)}
-                        startIcon={<AddIcon sx={{ fontSize: '12px !important' }} />}
-                        sx={{ fontSize: '0.72rem', borderColor: et.color + '66', color: et.color,
-                          '&:hover': { borderColor: et.color, bgcolor: et.color + '11' } }}>
+                        startIcon={<EventIcon type={et.value} size={15} />}
+                        sx={{ fontSize: '0.8rem', borderColor: 'divider', color: 'text.primary', bgcolor: 'background.paper',
+                          '&:hover': { borderColor: 'text.primary', bgcolor: 'background.paper' } }}>
                         {et.label}
                       </Button>
                     ))}
@@ -611,38 +609,55 @@ export default function LiveMatch() {
         {events.length === 0
           ? <Box sx={{ py: 5, textAlign: 'center' }}><Typography fontSize="0.875rem" color="text.secondary">Aucun événement</Typography></Box>
           : (
-            <Box sx={{ p: 1 }}>
-              {events.map(ev => {
-                const isHome     = ev.isHomeTeam;
+            <Box sx={{ py: 1 }}>
+              {events.map((ev, idx) => {
+                const isHome      = ev.isHomeTeam;
                 const playerLabel = ev.relatedPlayerName || ev.substitutionPlayerOutName || '—';
-                return (
-                  <Box key={ev.id}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.75, px: 1,
-                      borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover' },
-                      flexDirection: isHome ? 'row' : 'row-reverse' }}>
-                    <Box sx={{ flex: 1, textAlign: isHome ? 'left' : 'right' }}>
-                      <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                        {EVENT_ICON[ev.type] || '•'} {playerLabel}
+                // Bande de mi-temps entre le dernier fait de la 2e période et le premier de la 1re (liste du plus récent au plus ancien)
+                const prev = events[idx - 1];
+                const halfBand = prev && prev.minute > 45 && ev.minute <= 45;
+                const side = (
+                  <Box sx={{ textAlign: isHome ? 'right' : 'left' }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: 0.75, flexDirection: isHome ? 'row-reverse' : 'row' }}>
+                      <EventIcon type={ev.type} />
+                      <span>
+                        {playerLabel}
                         {ev.type === 'substitution' && ev.substitutionPlayerInName && (
-                          <Box component="span" sx={{ color: '#10b981', fontWeight: 400 }}> → {ev.substitutionPlayerInName}</Box>
+                          <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> → {ev.substitutionPlayerInName}</Box>
                         )}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>{isHome ? homeTeam : awayTeam}</Typography>
-                    </Box>
-                    <Box sx={{ minWidth: 46, height: 26, borderRadius: 13, bgcolor: 'text.primary', color: 'background.paper',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
-                      {ev.minute}'{ev.extraMinute ? `+${ev.extraMinute}` : ''}
-                    </Box>
-                    {canEdit && (
-                      <Tooltip title="Supprimer">
-                        <IconButton size="small" onClick={() => deleteEvent(ev.id)}
-                          sx={{ color: '#ef4444', opacity: 0.4, '&:hover': { opacity: 1 } }}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                      </span>
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{isHome ? homeTeam : awayTeam}</Typography>
                   </Box>
+                );
+                return (
+                  <React.Fragment key={ev.id}>
+                    {halfBand && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, my: 1, py: 0.75, bgcolor: '#ecebe4' }}>
+                        <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: '0.95rem', letterSpacing: '0.04em' }}>
+                          Mi-temps{match.halfTimeHomeScore != null ? ` · ${match.halfTimeHomeScore} – ${match.halfTimeAwayScore}` : ''}
+                        </Typography>
+                      </Box>
+                    )}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 64px 1fr 36px', alignItems: 'center', columnGap: 1.5, py: 0.75, px: 2, '&:hover': { bgcolor: 'action.hover' } }}>
+                      <Box>{isHome && side}</Box>
+                      <Box sx={{ justifySelf: 'center', minWidth: 46, height: 26, borderRadius: 13, bgcolor: 'text.primary', color: 'background.paper',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Barlow Condensed", sans-serif',
+                        fontSize: '0.9rem', fontWeight: 700 }}>
+                        {ev.minute}'{ev.extraMinute ? `+${ev.extraMinute}` : ''}
+                      </Box>
+                      <Box>{!isHome && side}</Box>
+                      <Box>
+                        {canEdit && (
+                          <Tooltip title="Supprimer">
+                            <IconButton size="small" onClick={() => deleteEvent(ev.id)} sx={{ color: 'text.secondary', '&:hover': { color: '#b91c1c' } }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </Box>
+                  </React.Fragment>
                 );
               })}
             </Box>
@@ -654,7 +669,7 @@ export default function LiveMatch() {
       <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); resetForm(); }} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
           {EVENT_TYPES.find(e => e.value === eventType)?.label} —{' '}
-          {selectedTeam === 'home' ? `🏠 ${homeTeam}` : `✈️ ${awayTeam}`}
+          {selectedTeam === 'home' ? homeTeam : awayTeam}
         </DialogTitle>
         <DialogContent sx={{ pt: '8px !important', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
@@ -699,7 +714,7 @@ export default function LiveMatch() {
 
           {NEEDS_PLAYER.includes(eventType) && !selectedPlayer && !playerInputName && (
             <Typography sx={{ fontSize: '0.75rem', color: '#ca8a04' }}>
-              ⚠️ Sélectionne un joueur pour que les stats soient mises à jour automatiquement.
+              Sélectionne un joueur pour que les stats soient mises à jour automatiquement.
             </Typography>
           )}
         </DialogContent>

@@ -358,7 +358,7 @@ const TeamDetails = () => {
         </Box>
         
         <Typography variant="h4" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-          ⚽ {team.name}
+          {team.name}
         </Typography>
         
         {/* Hidden file input */}
@@ -449,7 +449,7 @@ const TeamDetails = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                📋 Informations de l'équipe
+                Informations de l'équipe
               </Typography>
               <Divider sx={{ mb: 2 }} />
               
@@ -463,9 +463,9 @@ const TeamDetails = () => {
                       maxWidth: '100%',
                       maxHeight: '200px',
                       borderRadius: '8px',
-                      border: '2px solid #e0e0e0',
+                      border: '2px solid #dcd8cc',
                       objectFit: 'contain',
-                      backgroundColor: '#f5f5f5'
+                      backgroundColor: '#f6f4ee'
                     }}
                   />
                   <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
@@ -568,7 +568,7 @@ const TeamDetails = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                👥 Liste des joueurs ({players.length})
+                Liste des joueurs ({players.length})
               </Typography>
               <Divider sx={{ mb: 2 }} />
               
@@ -637,12 +637,12 @@ const TeamDetails = () => {
                           <Box>
                             {player.email && (
                               <Typography variant="caption" display="block">
-                                📧 {player.email}
+                                {player.email}
                               </Typography>
                             )}
                             {player.phone && (
                               <Typography variant="caption" display="block">
-                                📞 {player.phone}
+                                {player.phone}
                               </Typography>
                             )}
                             {!player.email && !player.phone && '-'}
@@ -663,7 +663,7 @@ const TeamDetails = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  🏟️ Répartition par poste
+                  Répartition par poste
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 
@@ -697,7 +697,7 @@ const TeamDetails = () => {
       {/* Photo Upload Dialog */}
       <Dialog open={uploadDialog} onClose={handleUploadCancel} maxWidth="sm" fullWidth>
         <DialogTitle>
-          📸 Télécharger une photo pour {team.name}
+          Télécharger une photo pour {team.name}
         </DialogTitle>
         <DialogContent>
           {previewUrl && (
@@ -709,9 +709,9 @@ const TeamDetails = () => {
                   maxWidth: '100%',
                   maxHeight: '300px',
                   borderRadius: '8px',
-                  border: '2px solid #e0e0e0',
+                  border: '2px solid #dcd8cc',
                   objectFit: 'contain',
-                  backgroundColor: '#f5f5f5'
+                  backgroundColor: '#f6f4ee'
                 }}
               />
               <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
@@ -723,10 +723,10 @@ const TeamDetails = () => {
           {selectedFile && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                📁 Fichier sélectionné: {selectedFile.name}
+                Fichier sélectionné: {selectedFile.name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                📏 Taille: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                Taille: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
               </Typography>
             </Box>
           )}

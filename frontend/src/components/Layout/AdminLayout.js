@@ -35,20 +35,22 @@ const EXPANDED  = 260;
 const COLLAPSED = 52;        // icon-only width (matches shadcn)
 
 // ─── Design tokens — CoachPro light theme ───────────────────────────────────
-const TEAL       = '#0c9e96';
-const TEAL_DARK  = '#0a8880';
-const TEAL_LIGHT = 'rgba(12,158,150,0.10)';
+// Tribune : rail anthracite, accent orange fumigène (seule couleur d'interface)
+const TEAL       = '#c8410e';
+const TEAL_DARK  = '#a3330a';
+const TEAL_LIGHT = 'rgba(255,90,31,0.12)';
+const FLARE      = '#ff5a1f';
 
 const C = {
-  bg:         '#092A43',
-  border:     'rgba(255,255,255,0.06)',
-  text:       'rgba(255,255,255,0.55)',
-  textStrong: '#ffffff',
-  accent:     'rgba(12,158,150,0.12)',
-  activeBg:   '#0c9e96',
+  bg:         '#1d2320',
+  border:     'rgba(241,239,232,0.08)',
+  text:       '#a9ada4',
+  textStrong: '#e9e6dc',
+  accent:     'rgba(255,90,31,0.10)',
+  activeBg:   '#2c3430',
   activeText: '#ffffff',
-  label:      'rgba(255,255,255,0.30)',
-  ring:       'rgba(12,158,150,0.30)',
+  label:      'rgba(241,239,232,0.45)',
+  ring:       'rgba(255,90,31,0.35)',
   teal:       TEAL,
   tealDark:   TEAL_DARK,
   tealLight:  TEAL_LIGHT,
@@ -93,40 +95,32 @@ const NavItem = ({ item, active, collapsed, onClick }) => {
         height: 44,
         px: collapsed ? 0 : 1.5,
         mx: collapsed ? 0 : 1,
-        borderRadius: '12px',
+        borderRadius: '8px',
         cursor: 'pointer',
         userSelect: 'none',
         outline: 'none',
-        transition: 'all 0.2s ease',
+        transition: 'background-color 0.15s ease',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        background:  active
-          ? `linear-gradient(135deg, ${C.teal} 0%, ${C.tealDark} 100%)`
-          : 'transparent',
-        boxShadow: active ? `0 6px 20px rgba(12,158,150,0.40)` : 'none',
-        '&:hover': {
-          background: active
-            ? `linear-gradient(135deg, ${C.tealDark} 0%, #087a72 100%)`
-            : 'rgba(12,158,150,0.08)',
-        },
+        backgroundColor: active ? C.activeBg : 'transparent',
+        '&:hover': { backgroundColor: active ? C.activeBg : 'rgba(241,239,232,0.06)' },
+        '&:focus-visible': { boxShadow: `0 0 0 2px ${FLARE}` },
         overflow: 'hidden',
         width: collapsed ? '100%' : 'auto',
       }}
     >
       {/* Icon — white when active, muted (#7a8fa6) when inactive */}
       <Box sx={{
-        width: 32, height: 32, borderRadius: '10px', flexShrink: 0,
+        width: 28, height: 28, flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        bgcolor: active ? 'rgba(255,255,255,0.20)' : 'rgba(12,158,150,0.06)',
-        transition: 'background 0.2s',
-        '& svg': { fontSize: 17, color: active ? '#fff' : C.text },
+        '& svg': { fontSize: 19, color: active ? FLARE : C.text },
       }}>
         {item.icon}
       </Box>
 
       {/* Label */}
       <Typography noWrap sx={{
-        fontSize: '0.875rem',
-        fontWeight: active ? 700 : 500,
+        fontSize: '0.95rem',
+        fontWeight: active ? 700 : 400,
         color: active ? '#ffffff' : C.textStrong,
         opacity: collapsed ? 0 : 1,
         width:   collapsed ? 0  : 'auto',
@@ -199,7 +193,7 @@ const AdminLayout = () => {
   const { mode, toggleColorMode } = useColorMode();
   const muiTheme = useTheme();
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 900);
 
   // ── Notifications state ──────────────────────────────────────────────────
   const [notifications, setNotifications] = useState([]);
@@ -290,15 +284,14 @@ const AdminLayout = () => {
         sx={{
           width:      sidebarWidth,
           flexShrink: 0,
-          background: '#092A43',
+          background: C.bg,
           display:    'flex',
           flexDirection: 'column',
           position:   'fixed',
           top: 0, left: 0,
           height:     '100vh',
           zIndex:     1200,
-          borderRight: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.12)',
+          borderRight: 'none',
           transition: 'width 0.2s cubic-bezier(0.4,0,0.2,1)',
           overflow: 'hidden',
         }}
@@ -324,11 +317,10 @@ const AdminLayout = () => {
             <Box
               sx={{
                 width: 34, height: 34,
-                borderRadius: '10px',
-                background: `linear-gradient(135deg, ${C.teal} 0%, ${C.tealDark} 100%)`,
+                borderRadius: '8px',
+                background: FLARE,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
-                boxShadow: `0 4px 12px ${C.tealLight}`,
               }}
             >
               <SportsSoccerIcon sx={{ color: '#fff', fontSize: 18 }} />
@@ -342,8 +334,8 @@ const AdminLayout = () => {
                 flexShrink: 0,
               }}
             >
-              <Typography sx={{ color: C.textStrong, fontWeight: 800, fontSize: '1rem', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-                Foot<span style={{ color: C.teal }}>Pro</span>
+              <Typography sx={{ color: C.textStrong, fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: '1.45rem', letterSpacing: '0.02em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                Foot<span style={{ color: FLARE }}>Pro</span>
               </Typography>
               <Typography sx={{ color: C.label, fontSize: '0.7rem', mt: 0.1, whiteSpace: 'nowrap' }}>
                 Panneau Admin
@@ -394,10 +386,10 @@ const AdminLayout = () => {
         </Box>
 
         {/* ── SidebarFooter ── même pattern que ScoutLayout ────────────────── */}
-        <Box sx={{ flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <Box sx={{ flexShrink: 0, borderTop: '1px solid rgba(241,239,232,0.08)' }}>
 
           {/* Dark mode toggle */}
-          <Box sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Box sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', borderBottom: '1px solid rgba(241,239,232,0.08)' }}>
             {!collapsed && (
               <Typography sx={{ color: C.text, fontSize: '0.75rem', fontWeight: 500 }}>
                 {mode === 'dark' ? 'Mode sombre' : 'Mode clair'}
@@ -448,8 +440,8 @@ const AdminLayout = () => {
           onClick={toggle}
           sx={{
             position: 'fixed',
-            top: 14,
-            left: COLLAPSED + 8,
+            top: 84,
+            left: COLLAPSED - 14,
             zIndex: 1201,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 28, height: 28,
@@ -458,7 +450,7 @@ const AdminLayout = () => {
             border: `1px solid ${C.border}`,
             cursor: 'pointer',
             color: C.teal,
-            boxShadow: '0 2px 12px rgba(12,158,150,0.15)',
+            boxShadow: '0 2px 12px rgba(255,90,31,0.15)',
             transition: 'background 0.15s, color 0.15s',
             '&:hover': { bgcolor: C.tealLight, color: C.tealDark },
             '& svg': { fontSize: 15 },
@@ -497,7 +489,7 @@ const AdminLayout = () => {
           sx: {
             width: 320, mt: 1, borderRadius: 3,
             bgcolor: '#ffffff', border: `1px solid ${C.border}`,
-            boxShadow: '0 8px 32px rgba(12,158,150,0.12)',
+            boxShadow: '0 8px 32px rgba(255,90,31,0.12)',
           }
         }}
       >
@@ -517,7 +509,7 @@ const AdminLayout = () => {
               const isOverdue = n.kind === 'overdue';
               const isDraw    = n.kind === 'draw';
               const accentColor = isOverdue ? '#ef4444' : isDraw ? '#f59e0b' : C.teal;
-              const bgUnread    = isOverdue ? 'rgba(239,68,68,0.06)' : isDraw ? 'rgba(245,158,11,0.06)' : 'rgba(12,158,150,0.06)';
+              const bgUnread    = isOverdue ? 'rgba(239,68,68,0.06)' : isDraw ? 'rgba(245,158,11,0.06)' : 'rgba(255,90,31,0.06)';
               const bgHover     = isOverdue ? 'rgba(239,68,68,0.10)' : isDraw ? 'rgba(245,158,11,0.10)' : C.accent;
               const icon        = isOverdue ? '⚠️' : isDraw ? '🔔' : '⚽';
 
@@ -583,7 +575,7 @@ const AdminLayout = () => {
           sx={{
             bgcolor: '#ffffff', border: `1px solid ${C.teal}`,
             color: C.textStrong, minWidth: 300,
-            boxShadow: '0 8px 24px rgba(12,158,150,0.18)',
+            boxShadow: '0 8px 24px rgba(255,90,31,0.18)',
             borderRadius: 3,
             '& .MuiAlert-icon': { color: C.teal },
             cursor: 'pointer',

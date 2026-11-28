@@ -3,46 +3,46 @@ import { createTheme } from '@mui/material/styles';
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const ui = {
   // Brand / Primary (navy #092A43)
-  brand600:  '#092A43',
-  brand700:  '#061C2C',
-  brand50:   '#E8EFF5',
-  brand100:  '#C7D8E6',
-  brand200:  '#95B5CE',
-  brand300:  '#5B8FB5',
+  brand600:  '#1d2320',
+  brand700:  '#141917',
+  brand50:   '#ecebe4',
+  brand100:  '#dcd8cc',
+  brand200:  '#b8b3a5',
+  brand300:  '#7d786c',
 
   // Teal (new primary — #092A43 navy stays for sidebar bg only)
-  teal600:  '#0c9e96',
-  teal700:  '#0a8880',
-  teal500:  '#5ecbc7',
-  teal50:   '#e6faf9',
-  teal100:  '#ccf0ee',
-  teal200:  '#99e2de',
-  teal300:  '#5ecbc7',
+  teal600:  '#c8410e',
+  teal700:  '#a3330a',
+  teal500:  '#ff5a1f',
+  teal50:   '#fdeee6',
+  teal100:  '#fbdccb',
+  teal200:  '#f6b89a',
+  teal300:  '#ff8a5c',
 
   // Grays (light mode)
-  gray25:  '#FCFCFD',
-  gray50:  '#F9FAFB',
-  gray100: '#F2F4F7',
-  gray200: '#EAECF0',
-  gray300: '#D0D5DD',
-  gray400: '#98A2B3',
-  gray500: '#667085',
-  gray600: '#475467',
-  gray700: '#344054',
-  gray800: '#1D2939',
-  gray900: '#101828',
+  gray25:  '#fbfaf7',
+  gray50:  '#f1efe8',
+  gray100: '#e9e6dc',
+  gray200: '#dcd8cc',
+  gray300: '#c8c3b5',
+  gray400: '#9d978a',
+  gray500: '#6f6a5f',
+  gray600: '#57534a',
+  gray700: '#3f3c36',
+  gray800: '#2a2925',
+  gray900: '#1d2320',
 
   // Dark mode surfaces
-  dark900: '#0a0f1a',   // deepest bg
-  dark800: '#0f172a',   // page background
-  dark700: '#1e293b',   // paper / card
-  dark600: '#293548',   // elevated surface
-  dark500: '#334155',   // border / divider
-  dark400: '#475569',   // subtle text
-  dark300: '#64748b',   // muted text
-  dark200: '#94a3b8',   // secondary text
-  dark100: '#cbd5e1',   // primary text (subdued)
-  dark50:  '#f1f5f9',   // primary text
+  dark900: '#121614',   // deepest bg
+  dark800: '#171c1a',   // page background
+  dark700: '#1f2522',   // paper / card
+  dark600: '#29302c',   // elevated surface
+  dark500: '#39413c',   // border / divider
+  dark400: '#59615b',   // subtle text
+  dark300: '#7f877f',   // muted text
+  dark200: '#a6ada4',   // secondary text
+  dark100: '#cfd3cb',   // primary text (subdued)
+  dark50:  '#f1efe8',   // primary text
 
   // Error / Destructive
   error600: '#dc2626',
@@ -64,17 +64,17 @@ const ui = {
   warning50:  '#fcd34d',
 
   // Shadows
-  shadowXs:        '0px 1px 2px rgba(16, 24, 40, 0.05)',
-  shadowSm:        '0px 1px 3px rgba(16, 24, 40, 0.10), 0px 1px 2px rgba(16, 24, 40, 0.06)',
-  shadowMd:        '0px 4px 8px -2px rgba(16, 24, 40, 0.10), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)',
-  shadowLg:        '0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03)',
-  shadowFocusBrand:'0px 0px 0px 4px #C7D8E6',
+  shadowXs:        '0px 1px 2px rgba(29, 35, 32, 0.05)',
+  shadowSm:        '0px 1px 3px rgba(29, 35, 32, 0.10), 0px 1px 2px rgba(29, 35, 32, 0.06)',
+  shadowMd:        '0px 4px 8px -2px rgba(29, 35, 32, 0.10), 0px 2px 4px -2px rgba(29, 35, 32, 0.06)',
+  shadowLg:        '0px 12px 16px -4px rgba(29, 35, 32, 0.08), 0px 4px 6px -2px rgba(29, 35, 32, 0.03)',
+  shadowFocusBrand:'0px 0px 0px 3px rgba(255,90,31,0.28)',
   shadowFocusError:'0px 0px 0px 4px #FEE4E2',
-  shadowFocusGray: '0px 0px 0px 4px #F2F4F7',
+  shadowFocusGray: '0px 0px 0px 3px rgba(29,35,32,0.14)',
 
   // Dark shadow
   shadowXsDark: '0px 1px 2px rgba(0,0,0,0.4)',
-  shadowFocusBrandDark: '0px 0px 0px 4px rgba(91,143,181,0.35)',
+  shadowFocusBrandDark: '0px 0px 0px 3px rgba(255,138,92,0.35)',
 };
 
 // ─── Theme factory ────────────────────────────────────────────────────────────
@@ -114,9 +114,9 @@ export default function createAppTheme(mode = 'light') {
         dark:  ui.warning700,
       },
       info: {
-        main:  '#2563eb',
-        light: '#93c5fd',
-        dark:  '#1d4ed8',
+        main:  '#3f3c36',
+        light: '#9d978a',
+        dark:  '#1d2320',
       },
       background: {
         default: isDark ? ui.dark800 : ui.gray50,
@@ -131,7 +131,15 @@ export default function createAppTheme(mode = 'light') {
     },
 
     typography: {
-      fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+      fontFamily: '"Barlow", "Segoe UI", system-ui, sans-serif',
+      h1: { fontFamily: '"Barlow Condensed", "Barlow", sans-serif', fontWeight: 700, letterSpacing: '0.01em' },
+      h2: { fontFamily: '"Barlow Condensed", "Barlow", sans-serif', fontWeight: 700, letterSpacing: '0.01em' },
+      h3: { fontFamily: '"Barlow Condensed", "Barlow", sans-serif', fontWeight: 700, letterSpacing: '0.01em' },
+      h4: { fontFamily: '"Barlow Condensed", "Barlow", sans-serif', fontWeight: 700, letterSpacing: '0.01em' },
+      h5: { fontFamily: '"Barlow Condensed", "Barlow", sans-serif', fontWeight: 700, letterSpacing: '0.01em' },
+      h6: { fontFamily: '"Barlow Condensed", "Barlow", sans-serif', fontWeight: 700, letterSpacing: '0.02em', fontSize: '1.15rem' },
+      body1: { fontSize: '0.95rem' },
+      body2: { fontSize: '0.875rem' },
       button: {
         fontSize:      '0.875rem',
         fontWeight:    600,
@@ -141,7 +149,7 @@ export default function createAppTheme(mode = 'light') {
       },
     },
 
-    shape: { borderRadius: 10 },
+    shape: { borderRadius: 8 },
 
     shadows: [
       'none',
@@ -207,7 +215,7 @@ export default function createAppTheme(mode = 'light') {
               },
               '&:focus-visible': {
                 backgroundColor: ui.teal600,
-                boxShadow: `${ui.shadowXs}, 0px 0px 0px 4px rgba(12,158,150,0.25)`,
+                boxShadow: `${ui.shadowXs}, 0px 0px 0px 4px rgba(255,90,31,0.25)`,
                 outline: 'none',
               },
               '&.Mui-disabled': {
@@ -245,15 +253,15 @@ export default function createAppTheme(mode = 'light') {
           outlined: {
             boxShadow: isDark ? ui.shadowXsDark : ui.shadowXs,
             '&.MuiButton-outlinedPrimary': {
-              backgroundColor: isDark ? 'rgba(12,158,150,0.08)' : ui.teal50,
+              backgroundColor: isDark ? 'rgba(255,90,31,0.08)' : ui.teal50,
               color:           isDark ? ui.teal300 : ui.teal700,
               border:          `1px solid ${isDark ? ui.teal300 : ui.teal300}`,
               '&:hover': {
-                backgroundColor: isDark ? 'rgba(12,158,150,0.15)' : ui.teal100,
+                backgroundColor: isDark ? 'rgba(255,90,31,0.15)' : ui.teal100,
                 borderColor:     ui.teal300,
               },
               '&:focus-visible': {
-                boxShadow: `${ui.shadowXs}, 0px 0px 0px 4px rgba(12,158,150,0.25)`,
+                boxShadow: `${ui.shadowXs}, 0px 0px 0px 4px rgba(255,90,31,0.25)`,
                 outline: 'none',
               },
               '&.Mui-disabled': {
@@ -295,7 +303,7 @@ export default function createAppTheme(mode = 'light') {
             boxShadow: 'none',
             '&.MuiButton-textPrimary': {
               color: isDark ? ui.teal300 : ui.teal700,
-              '&:hover': { backgroundColor: isDark ? 'rgba(12,158,150,0.10)' : ui.teal50 },
+              '&:hover': { backgroundColor: isDark ? 'rgba(255,90,31,0.10)' : ui.teal50 },
             },
             '&.MuiButton-textInherit, &.MuiButton-textSecondary': {
               color: isDark ? ui.dark200 : ui.gray600,
@@ -347,7 +355,7 @@ export default function createAppTheme(mode = 'light') {
               '&:hover fieldset':  { borderColor: isDark ? ui.dark400 : ui.gray400 },
               '&.Mui-focused fieldset': {
                 borderColor: ui.teal600,
-                boxShadow: '0px 0px 0px 4px rgba(12,158,150,0.20)',
+                boxShadow: '0px 0px 0px 4px rgba(255,90,31,0.20)',
                 borderWidth: '1px',
               },
               '&.Mui-error fieldset': { borderColor: ui.error600 },
@@ -405,10 +413,10 @@ export default function createAppTheme(mode = 'light') {
             padding: '8px 10px',
             '&:hover': { backgroundColor: isDark ? ui.dark600 : ui.gray50 },
             '&.Mui-selected': {
-              backgroundColor: isDark ? 'rgba(12,158,150,0.15)' : ui.teal50,
+              backgroundColor: isDark ? 'rgba(255,90,31,0.15)' : ui.teal50,
               color:           isDark ? ui.teal300 : ui.teal700,
               fontWeight: 600,
-              '&:hover': { backgroundColor: isDark ? 'rgba(12,158,150,0.22)' : ui.teal100 },
+              '&:hover': { backgroundColor: isDark ? 'rgba(255,90,31,0.22)' : ui.teal100 },
             },
           },
         },
@@ -418,16 +426,13 @@ export default function createAppTheme(mode = 'light') {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: '12px',
+            borderRadius: '10px',
             border: isDark ? `1px solid ${ui.dark500}` : `1px solid ${ui.gray200}`,
-            boxShadow: isDark ? ui.shadowXsDark : ui.shadowSm,
+            boxShadow: 'none',
             backgroundColor: isDark ? ui.dark700 : '#ffffff',
             backdropFilter: 'none',
             WebkitBackdropFilter: 'none',
-            transition: 'box-shadow 0.2s ease, transform 0.15s ease',
-            '&:hover': {
-              boxShadow: isDark ? '0px 4px 12px rgba(0,0,0,0.4)' : ui.shadowMd,
-            },
+            
           },
         },
       },
@@ -452,33 +457,23 @@ export default function createAppTheme(mode = 'light') {
       MuiDialog: {
         styleOverrides: {
           root: {
-            '& .MuiBackdrop-root': {
-              backgroundColor: 'rgba(12,158,150,0.12)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-            },
+            '& .MuiBackdrop-root': { backgroundColor: 'rgba(29,35,32,0.45)' },
           },
           paper: {
-            borderRadius: '20px',
-            background: isDark
-              ? 'rgba(15,23,42,0.90)'
-              : 'rgba(255,255,255,0.80)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: isDark
-              ? '1px solid rgba(255,255,255,0.08)'
-              : '1px solid rgba(255,255,255,0.90)',
-            boxShadow: '0 20px 60px rgba(12,158,150,0.20)',
+            borderRadius: '12px',
+            background: isDark ? ui.dark700 : '#ffffff',
+            border: `1px solid ${isDark ? ui.dark500 : ui.gray200}`,
+            boxShadow: '0 24px 48px -12px rgba(29,35,32,0.35)',
           },
         },
       },
       MuiDialogTitle: {
         styleOverrides: {
           root: {
-            fontSize: '1.1rem', fontWeight: 800,
-            color: isDark ? ui.dark50 : '#1a2d3d',
+            fontFamily: '"Barlow Condensed", "Barlow", sans-serif', fontSize: '1.35rem', fontWeight: 700,
+            color: isDark ? ui.dark50 : ui.gray900,
             padding: '22px 28px 12px',
-            borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(12,158,150,0.10)',
+            borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : `1px solid ${ui.gray200}`,
           },
         },
       },
@@ -489,7 +484,7 @@ export default function createAppTheme(mode = 'light') {
         styleOverrides: {
           root: {
             padding: '12px 28px 22px', gap: '12px',
-            borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(12,158,150,0.10)',
+            borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : `1px solid ${ui.gray200}`,
             '& > :not(:first-of-type)': { marginLeft: 0 },
           },
         },
@@ -562,7 +557,7 @@ export default function createAppTheme(mode = 'light') {
             fontSize:      '0.875rem',
             fontWeight:    500,
             color:         isDark ? ui.dark300 : ui.gray500,
-            '&.Mui-selected': { color: isDark ? ui.teal300 : ui.teal700, fontWeight: 600 },
+            '&.Mui-selected': { color: isDark ? ui.teal300 : ui.gray900, fontWeight: 700 },
           },
         },
       },
@@ -588,13 +583,14 @@ export default function createAppTheme(mode = 'light') {
         styleOverrides: {
           '*': { boxSizing: 'border-box' },
           body: {
-            fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+            fontFamily: '"Barlow", "Segoe UI", system-ui, sans-serif',
+            fontVariantNumeric: 'tabular-nums',
             color:      isDark ? ui.dark50  : ui.gray900,
             backgroundColor: isDark ? ui.dark800 : ui.gray50,
             '-webkit-font-smoothing':  'antialiased',
             '-moz-osx-font-smoothing': 'grayscale',
           },
-          '*:focus-visible': { outline: 'none' },
+          '*:focus-visible': { outline: '2px solid #ff5a1f', outlineOffset: '2px' },
           // Dark mode scrollbar
           ...(isDark && {
             '*::-webkit-scrollbar':       { width: '6px', height: '6px' },

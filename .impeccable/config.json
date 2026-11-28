@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "roboto",
+        "files": [
+          "captures/FootPro-guide.html"
+        ],
+        "createdAt": "2026-11-28T11:37:46.964Z",
+        "reason": "assistant decided: standalone English guide for the video editor, not part of the admin app; DESIGN.md covers the admin web only"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "consolas",
+        "files": [
+          "captures/FootPro-guide.html"
+        ],
+        "createdAt": "2026-11-28T11:37:47.053Z",
+        "reason": "assistant decided: standalone English guide for the video editor, not part of the admin app; DESIGN.md covers the admin web only"
+      }
+    ]
+  }
+}

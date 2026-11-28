@@ -9,8 +9,8 @@ const recomputeMatchPlayers = async (matchId, extraIds = []) =>
 const { syncTournamentStatus } = require('../services/tournamentService');
 
 const matchIncludes = [
-  { model: Team, as: 'homeTeam', attributes: ['id', 'name'], include: [{ model: Player, as: 'players', attributes: ['id', 'name', 'jerseyNumber', 'position'], required: false }] },
-  { model: Team, as: 'awayTeam', attributes: ['id', 'name'], include: [{ model: Player, as: 'players', attributes: ['id', 'name', 'jerseyNumber', 'position'], required: false }] },
+  { model: Team, as: 'homeTeam', attributes: ['id', 'name', 'colors'], include: [{ model: Player, as: 'players', attributes: ['id', 'name', 'jerseyNumber', 'position'], required: false }] },
+  { model: Team, as: 'awayTeam', attributes: ['id', 'name', 'colors'], include: [{ model: Player, as: 'players', attributes: ['id', 'name', 'jerseyNumber', 'position'], required: false }] },
   { model: Tournament, as: 'tournament', attributes: ['id', 'name', 'format'] },
   { model: User, as: 'delegate', attributes: ['id', 'name'] },
   { model: MatchEvent, as: 'events', separate: true, order: [['minute', 'ASC'], ['extraMinute', 'ASC']] },
@@ -479,8 +479,8 @@ const getPublicMatches = async (req, res) => {
         status: { [Op.in]: ['completed', 'in_progress', 'scheduled'] },
       },
       include: [
-        { model: Team,       as: 'homeTeam',   attributes: ['id', 'name'] },
-        { model: Team,       as: 'awayTeam',   attributes: ['id', 'name'] },
+        { model: Team,       as: 'homeTeam',   attributes: ['id', 'name', 'colors'] },
+        { model: Team,       as: 'awayTeam',   attributes: ['id', 'name', 'colors'] },
         { model: Tournament, as: 'tournament', attributes: ['id', 'name'] },
       ],
       order: [['date', 'DESC']],

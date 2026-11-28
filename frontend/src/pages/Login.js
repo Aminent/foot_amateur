@@ -23,20 +23,20 @@ import animationData from '../assets/footballer.json';
 
 /* ─── palette ────────────────────────────────────────────────────────────────*/
 const P = {
-  navy:     '#0A1628',
-  navyMid:  '#0F1F3D',
-  navyLt:   '#162544',
-  blue:     '#0c9e96',   // teal primary (was #3B82F6)
-  blueLt:   '#5ecbc7',   // teal light   (was #60A5FA)
-  blueGlow: 'rgba(12,158,150,0.18)',
-  accent:   '#0c9e96',   // teal primary (was #10B981)
+  navy:     '#1d2320',
+  navyMid:  '#1d2320',
+  navyLt:   '#1d2320',
+  blue:     '#c8410e',   // teal primary (was #c8410e)
+  blueLt:   '#ff8a5c',   // teal light   (was #ff8a5c)
+  blueGlow: 'rgba(255,90,31,0.18)',
+  accent:   '#c8410e',   // teal primary (was #2f7d4a)
   gold:     '#F59E0B',
   white:    '#FFFFFF',
-  offWhite: '#F8FAFC',
-  border:   '#E4E7EC',
-  gray:     '#667085',
-  gray2:    '#344054',
-  gray3:    '#98A2B3',
+  offWhite: '#f6f4ee',
+  border:   '#dcd8cc',
+  gray:     '#6f6a5f',
+  gray2:    '#3f3c36',
+  gray3:    '#9d978a',
 };
 
 /* ─── stat pill ──────────────────────────────────────────────────────────────*/
@@ -56,8 +56,8 @@ const Feature = ({ icon, title, desc }) => (
   <Box sx={{ display: 'flex', gap: 1.75, alignItems: 'flex-start' }}>
     <Box sx={{
       width: 38, height: 38, borderRadius: '10px', flexShrink: 0,
-      background: 'rgba(12,158,150,0.12)',
-      border: '1px solid rgba(12,158,150,0.2)',
+      background: 'rgba(255,90,31,0.12)',
+      border: '1px solid rgba(255,90,31,0.2)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       {React.cloneElement(icon, { sx: { fontSize: 18, color: P.blueLt } })}
@@ -167,11 +167,11 @@ const Login = () => {
     '& .MuiOutlinedInput-root': {
       height: 46, borderRadius: '10px',
       bgcolor: err ? '#FEF3F2' : P.offWhite,
-      '& fieldset': { borderColor: err ? '#D92D20' : P.border },
-      '&:hover fieldset': { borderColor: err ? '#D92D20' : '#98A2B3' },
+      '& fieldset': { borderColor: err ? '#b91c1c' : P.border },
+      '&:hover fieldset': { borderColor: err ? '#b91c1c' : '#9d978a' },
       '&.Mui-focused fieldset': {
-        borderColor: err ? '#D92D20' : P.blue,
-        boxShadow: err ? '0 0 0 4px rgba(217,45,32,0.1)' : '0 0 0 4px rgba(12,158,150,0.18)',
+        borderColor: err ? '#b91c1c' : P.blue,
+        boxShadow: err ? '0 0 0 4px rgba(217,45,32,0.1)' : '0 0 0 4px rgba(255,90,31,0.18)',
         borderWidth: '1px',
       },
       '& input': { fontSize: '0.875rem', color: P.gray2 },
@@ -190,36 +190,8 @@ const Login = () => {
         position: 'relative',
         overflow: 'hidden',
         p: 5,
-        background: `linear-gradient(145deg, ${P.navy} 0%, ${P.navyMid} 60%, ${P.navyLt} 100%)`,
+        background: P.navy,
       }}>
-
-        {/* Cercles décoratifs */}
-        {[
-          { size: 500, top: -180, left: -180, opacity: 0.05 },
-          { size: 300, top: -80,  left: -80,  opacity: 0.04 },
-          { size: 400, bottom: -150, right: -150, opacity: 0.05 },
-          { size: 200, bottom: -60,  right: -60,  opacity: 0.04 },
-        ].map((c, i) => (
-          <Box key={i} sx={{
-            position: 'absolute', borderRadius: '50%',
-            width: c.size, height: c.size,
-            top: c.top, left: c.left, right: c.right, bottom: c.bottom,
-            border: `1px solid rgba(255,255,255,${c.opacity})`,
-            pointerEvents: 'none',
-          }} />
-        ))}
-
-        {/* Glow bleu */}
-        <Box sx={{
-          position: 'absolute', width: 420, height: 420, borderRadius: '50%',
-          top: '25%', left: '-8%', pointerEvents: 'none',
-          background: `radial-gradient(circle, ${P.blueGlow} 0%, transparent 70%)`,
-        }} />
-        <Box sx={{
-          position: 'absolute', width: 280, height: 280, borderRadius: '50%',
-          bottom: '10%', right: '5%', pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(12,158,150,0.1) 0%, transparent 70%)',
-        }} />
 
         {/* ── Brand ───────────────────────────────────────────────────────────*/}
         <Box sx={{ position: 'relative', zIndex: 1 }}>
@@ -227,7 +199,7 @@ const Login = () => {
             <Box sx={{
               width: 44, height: 44, borderRadius: '12px', bgcolor: P.blue,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 20px rgba(12,158,150,0.45)',
+              boxShadow: '0 4px 20px rgba(255,90,31,0.45)',
             }}>
               <BallIcon sx={{ color: P.white, fontSize: 24 }} />
             </Box>
@@ -241,23 +213,19 @@ const Login = () => {
             </Box>
             <Chip label="v2.0" size="small" sx={{
               ml: 1, height: 20, fontSize: '0.65rem', fontWeight: 700,
-              bgcolor: 'rgba(12,158,150,0.15)', color: P.blueLt,
-              border: '1px solid rgba(12,158,150,0.3)',
+              bgcolor: 'rgba(255,90,31,0.15)', color: P.blueLt,
+              border: '1px solid rgba(255,90,31,0.3)',
             }} />
           </Box>
 
           {/* Headline */}
           <Typography sx={{
-            color: P.white, fontWeight: 800,
-            fontSize: { lg: '2.1rem', xl: '2.5rem' },
+            color: P.white, fontWeight: 700, fontFamily: '"Barlow Condensed", sans-serif',
+            fontSize: { lg: '2.9rem', xl: '3.4rem' },
             lineHeight: 1.2, mb: 1.5, maxWidth: 460,
           }}>
             Gérez votre ligue de football en toute{' '}
-            <Box component="span" sx={{
-              background: `linear-gradient(90deg, ${P.blue} 0%, ${P.accent} 100%)`,
-              backgroundClip: 'text', WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>
+            <Box component="span" sx={{ color: '#ff5a1f' }}>
               simplicité
             </Box>
           </Typography>
@@ -273,7 +241,7 @@ const Login = () => {
             <Stat value="12+"  label="Équipes actives"  color={P.blueLt} />
             <Stat value="180+" label="Joueurs inscrits"  color={P.accent} />
             <Stat value="64+"  label="Matchs joués"      color={P.gold} />
-            <Stat value="8+"   label="Tournois"           color="#C084FC" />
+            <Stat value="8+"   label="Tournois"           color="#ff8a5c" />
           </Box>
 
           {/* Features */}
@@ -392,7 +360,7 @@ const Login = () => {
           {/* En-tête formulaire */}
           <Box sx={{ mb: 4 }}>
             <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: P.navy, mb: 0.5, lineHeight: 1.25 }}>
-              Bienvenue 👋
+              Bienvenue
             </Typography>
             <Typography sx={{ fontSize: '0.875rem', color: P.gray, lineHeight: 1.6 }}>
               Connectez-vous à votre espace administrateur pour gérer votre ligue.
@@ -403,10 +371,10 @@ const Login = () => {
           <Box sx={{
             display: 'inline-flex', alignItems: 'center', gap: 0.75,
             px: 1.5, py: 0.6, borderRadius: '8px', mb: 3.5,
-            bgcolor: '#e6faf9', border: '1px solid #99e2de',
+            bgcolor: '#fdeee6', border: '1px solid #f6b89a',
           }}>
             <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: P.blue }} />
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#0a8880' }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#a3330a' }}>
               Accès Administrateur
             </Typography>
           </Box>
@@ -433,7 +401,7 @@ const Login = () => {
                 error={!!errors.email} helperText={errors.email}
                 InputProps={{ startAdornment: (
                   <InputAdornment position="start">
-                    <EmailIcon sx={{ fontSize: 18, color: errors.email ? '#D92D20' : P.gray3 }} />
+                    <EmailIcon sx={{ fontSize: 18, color: errors.email ? '#b91c1c' : P.gray3 }} />
                   </InputAdornment>
                 )}}
                 sx={fieldSx(!!errors.email)}
@@ -454,7 +422,7 @@ const Login = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockIcon sx={{ fontSize: 18, color: errors.password ? '#D92D20' : P.gray3 }} />
+                      <LockIcon sx={{ fontSize: 18, color: errors.password ? '#b91c1c' : P.gray3 }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -480,14 +448,14 @@ const Login = () => {
                 height: 50, borderRadius: '12px',
                 fontSize: '0.925rem', fontWeight: 700, textTransform: 'none',
                 bgcolor: P.blue, color: P.white,
-                boxShadow: '0 4px 14px rgba(12,158,150,0.35)',
+                boxShadow: '0 4px 14px rgba(255,90,31,0.35)',
                 '&:hover': {
-                  bgcolor: '#0a8880',
-                  boxShadow: '0 6px 20px rgba(12,158,150,0.45)',
+                  bgcolor: '#a3330a',
+                  boxShadow: '0 6px 20px rgba(255,90,31,0.45)',
                   transform: 'translateY(-1px)',
                 },
                 '&:active': { transform: 'translateY(0)' },
-                '&.Mui-disabled': { bgcolor: '#5ecbc7', color: P.white, opacity: 1, boxShadow: 'none' },
+                '&.Mui-disabled': { bgcolor: '#ff8a5c', color: P.white, opacity: 1, boxShadow: 'none' },
                 transition: 'all 0.18s ease',
               }}
             >
@@ -521,8 +489,8 @@ const Login = () => {
               color: P.gray2, borderColor: P.border,
               bgcolor: P.offWhite,
               '&:hover': {
-                bgcolor: '#F2F4F7',
-                borderColor: '#98A2B3',
+                bgcolor: '#ecebe4',
+                borderColor: '#9d978a',
                 boxShadow: 'none',
               },
               mb: 3,
@@ -534,9 +502,9 @@ const Login = () => {
           {/* Badges de confiance */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
             {[
-              { icon: '🔒', label: 'SSL chiffré' },
-              { icon: '⚡', label: 'Temps réel' },
-              { icon: '📱', label: 'Multi-plateforme' },
+              { icon: null, label: 'SSL chiffré' },
+              { icon: null, label: 'Temps réel' },
+              { icon: null, label: 'Multi-plateforme' },
             ].map(b => (
               <Box key={b.label} sx={{
                 display: 'flex', alignItems: 'center', gap: 0.6,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import Scarf from '../components/Admin/Scarf';
 import { authHeaders } from '../utils/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
@@ -24,6 +25,8 @@ import {
   Visibility as VisibilityIcon,
   SportsSoccer as GoalIcon,
   Star as StarIcon,
+  EmojiEvents as EmojiEventsIcon,
+  Print as PrintIcon,
 } from '@mui/icons-material';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
@@ -52,7 +55,7 @@ const ROUND_NAMES = (r, total) => {
 const computeStandings = (matches, teams) => {
   const rows = {};
   teams.forEach(t => {
-    rows[t.id] = { id: t.id, name: t.name, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
+    rows[t.id] = { id: t.id, name: t.name, colors: t.colors, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 };
   });
 
   matches.filter(m => m.status === 'completed').forEach(m => {
@@ -123,7 +126,7 @@ const StandingsTable = ({ standings }) => {
     <Box sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: '#f1f5f9' }}>
+          <TableRow sx={{ bgcolor: '#ecebe4' }}>
             <TableCell sx={{ fontWeight: 700, width: 36 }}>#</TableCell>
             <TableCell sx={{ fontWeight: 700 }}>Équipe</TableCell>
             {['J','V','N','D','BP','BC','DB','Pts'].map(h => (
@@ -137,31 +140,25 @@ const StandingsTable = ({ standings }) => {
         </TableHead>
         <TableBody>
           {standings.map((row, i) => {
-            const podium = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'transparent';
             return (
-              <TableRow key={row.id} hover sx={{ bgcolor: i < 3 ? `${podium}11` : undefined }}>
-                <TableCell>
-                  <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: i < 3 ? podium : '#e2e8f0',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: i < 3 ? 'white' : '#64748b', fontSize: 12, fontWeight: 700 }}>
-                    {i + 1}
-                  </Box>
+              <TableRow key={row.id} hover>
+                <TableCell sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 16, color: '#57534a' }}>
+                  {i + 1}
                 </TableCell>
-                <TableCell sx={{ fontWeight: i < 3 ? 700 : 400 }}>{row.name}</TableCell>
+                <TableCell sx={{ fontWeight: i < 3 ? 700 : 400 }}><Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.25 }}><Scarf team={row} size="sm" />{row.name}</Box></TableCell>
                 <TableCell align="center">{row.P}</TableCell>
-                <TableCell align="center" sx={{ color: '#16a34a', fontWeight: 600 }}>{row.W}</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>{row.W}</TableCell>
                 <TableCell align="center">{row.D}</TableCell>
                 <TableCell align="center" sx={{ color: '#dc2626' }}>{row.L}</TableCell>
                 <TableCell align="center">{row.GF}</TableCell>
                 <TableCell align="center">{row.GA}</TableCell>
-                <TableCell align="center" sx={{ color: row.GD > 0 ? '#16a34a' : row.GD < 0 ? '#dc2626' : undefined, fontWeight: 600 }}>
+                <TableCell align="center" sx={{ color: row.GD > 0 ? '#2f7d4a' : row.GD < 0 ? '#dc2626' : undefined, fontWeight: 600 }}>
                   {row.GD > 0 ? `+${row.GD}` : row.GD}
                 </TableCell>
                 <TableCell align="center">
-                  <Box sx={{ bgcolor: '#3b82f6', color: 'white', borderRadius: 1, px: 1, py: 0.25,
-                    fontWeight: 800, fontSize: 14, display: 'inline-block', minWidth: 32, textAlign: 'center' }}>
+                  <Typography component="span" sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 19, color: '#1d2320' }}>
                     {row.Pts}
-                  </Box>
+                  </Typography>
                 </TableCell>
               </TableRow>
             );
@@ -186,10 +183,10 @@ const TopScorers = ({ scorers }) => {
     <Box>
       {scorers.slice(0, 10).map((s, i) => (
         <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.25 }}>
-          <Box sx={{ width: 24, textAlign: 'center', color: '#94a3b8', fontSize: 12, fontWeight: 700 }}>
-            {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+          <Box sx={{ width: 24, textAlign: 'center', color: '#9d978a', fontSize: 12, fontWeight: 700 }}>
+            {i + 1}
           </Box>
-          <Avatar sx={{ width: 30, height: 30, bgcolor: '#3b82f6', fontSize: 12, fontWeight: 700 }}>
+          <Avatar sx={{ width: 30, height: 30, bgcolor: '#c8410e', fontSize: 12, fontWeight: 700 }}>
             {s.name[0]?.toUpperCase()}
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -198,13 +195,13 @@ const TopScorers = ({ scorers }) => {
             <LinearProgress
               variant="determinate"
               value={(s.goals / max) * 100}
-              sx={{ height: 4, borderRadius: 2, mt: 0.4, bgcolor: '#e2e8f0',
-                '& .MuiLinearProgress-bar': { bgcolor: '#3b82f6' } }}
+              sx={{ height: 4, borderRadius: 2, mt: 0.4, bgcolor: '#dcd8cc',
+                '& .MuiLinearProgress-bar': { bgcolor: '#f1efe8' } }}
             />
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: '#f1f5f9',
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: '#ecebe4',
             borderRadius: 1.5, px: 1, py: 0.4 }}>
-            <GoalIcon sx={{ fontSize: 14, color: '#64748b' }} />
+            <GoalIcon sx={{ fontSize: 14, color: '#6f6a5f' }} />
             <Typography fontSize={14} fontWeight={800}>{s.goals}</Typography>
           </Box>
         </Box>
@@ -233,7 +230,7 @@ const VisualBracket = ({ bracketRounds }) => {
             <Box key={rNum} sx={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column' }}>
               {/* Round header */}
               <Box sx={{ textAlign: 'center', py: 1.25, mb: 1,
-                bgcolor: '#0f172a', color: 'white', borderRadius: '6px 6px 0 0', mx: 1 }}>
+                bgcolor: '#1d2320', color: 'white', borderRadius: '6px 6px 0 0', mx: 1 }}>
                 <Typography fontSize={12} fontWeight={700} letterSpacing={0.5}
                   textTransform="uppercase">{label}</Typography>
               </Box>
@@ -249,39 +246,39 @@ const VisualBracket = ({ bracketRounds }) => {
                   const onPens = done && m.homeTeamScore === m.awayTeamScore && (hWin || aWin);
                   const live = m.status === 'in_progress' || m.status === 'half_time';
                   return (
-                    <Box key={m.id} sx={{ bgcolor: 'white', border: '1px solid #e2e8f0',
+                    <Box key={m.id} sx={{ bgcolor: 'white', border: '1px solid #dcd8cc',
                       borderRadius: 1.5, overflow: 'hidden',
-                      boxShadow: m.status === 'completed' ? '0 0 0 2px #22c55e33' : '0 1px 4px #0001' }}>
+                      boxShadow: 'none', ...(live && { borderColor: '#ff5a1f' }) }}>
                       {/* Home team */}
                       <Box sx={{ display: 'flex', alignItems: 'center', px: 1.25, py: 0.9,
-                        bgcolor: hWin ? '#f0fdf4' : '#f8fafc',
-                        borderBottom: '1px solid #f1f5f9' }}>
+                        bgcolor: hWin ? '#ecebe4' : '#ffffff',
+                        borderBottom: '1px solid #ecebe4' }}>
                         <Typography fontSize={12} sx={{ flex: 1, fontWeight: hWin ? 700 : 400,
-                          color: hWin ? '#15803d' : '#1e293b' }} noWrap>
-                          {m.homeTeam?.name || 'En attente...'}{hWin && onPens ? ' (t.a.b.)' : ''}
+                          color: '#1d2320' }} noWrap>
+                          <Scarf team={m.homeTeam} size="sm" sx={{ mr: 1 }} />{m.homeTeam?.name || 'En attente...'}{hWin && onPens ? ' (t.a.b.)' : ''}
                         </Typography>
                         <Box sx={{ ml: 1, minWidth: 22, textAlign: 'right',
-                          fontWeight: 800, fontSize: 14, color: hWin ? '#15803d' : '#475569' }}>
+                          fontWeight: 800, fontSize: 14, color: '#1d2320' }}>
                           {done || live ? m.homeTeamScore ?? '-' : '–'}
                         </Box>
                       </Box>
                       {/* Away team */}
                       <Box sx={{ display: 'flex', alignItems: 'center', px: 1.25, py: 0.9,
-                        bgcolor: aWin ? '#f0fdf4' : 'white' }}>
+                        bgcolor: aWin ? '#ecebe4' : '#ffffff' }}>
                         <Typography fontSize={12} sx={{ flex: 1, fontWeight: aWin ? 700 : 400,
-                          color: aWin ? '#15803d' : '#1e293b' }} noWrap>
-                          {m.awayTeam?.name || 'En attente...'}{aWin && onPens ? ' (t.a.b.)' : ''}
+                          color: '#1d2320' }} noWrap>
+                          <Scarf team={m.awayTeam} size="sm" sx={{ mr: 1 }} />{m.awayTeam?.name || 'En attente...'}{aWin && onPens ? ' (t.a.b.)' : ''}
                         </Typography>
                         <Box sx={{ ml: 1, minWidth: 22, textAlign: 'right',
-                          fontWeight: 800, fontSize: 14, color: aWin ? '#15803d' : '#475569' }}>
+                          fontWeight: 800, fontSize: 14, color: '#1d2320' }}>
                           {done || live ? m.awayTeamScore ?? '-' : '–'}
                         </Box>
                       </Box>
                       {/* Infos (affichage seul : le résultat se saisit dans la section Matchs) */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 0.5,
-                        px: 1.25, py: 0.6, bgcolor: '#f8fafc', borderTop: '1px solid #f1f5f9' }}>
+                        px: 1.25, py: 0.6, bgcolor: '#f6f4ee', borderTop: '1px solid #ecebe4' }}>
                         <Typography fontSize={10} color="text.secondary">{m.date ? fmt(m.date) : 'Date à fixer'}</Typography>
-                        <Typography fontSize={10} fontWeight={700} color={done ? '#15803d' : live ? '#dc2626' : 'text.secondary'}>
+                        <Typography fontSize={10} fontWeight={700} color={done ? '#57534a' : live ? '#c8410e' : 'text.secondary'}>
                           {done ? 'Terminé' : live ? 'En direct' : 'À venir'}
                         </Typography>
                       </Box>
@@ -454,15 +451,11 @@ const TournamentDetails = () => {
 
       {/* ── Hero Banner ── */}
       <Paper elevation={0} sx={{
-        mb: 3, borderRadius: 4, overflow: 'hidden',
-        background: 'linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0F172A 100%)',
+        mb: 3, borderRadius: '12px', overflow: 'hidden',
+        background: '#1d2320',
         position: 'relative',
       }}>
         {/* decorative circles */}
-        <Box sx={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200,
-          borderRadius: '50%', bgcolor: 'rgba(59,130,246,0.08)' }} />
-        <Box sx={{ position: 'absolute', bottom: -30, left: -30, width: 150, height: 150,
-          borderRadius: '50%', bgcolor: 'rgba(245,158,11,0.06)' }} />
 
         <Box sx={{ position: 'relative', p: { xs: 2.5, md: 3.5 } }}>
           <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/admin')}
@@ -474,10 +467,9 @@ const TournamentDetails = () => {
             {/* Trophy avatar */}
             <Box sx={{
               width: 72, height: 72, borderRadius: 3, flexShrink: 0,
-              background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+              background: '#ff5a1f',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 36, boxShadow: '0 8px 24px rgba(245,158,11,0.4)',
-            }}>🏆</Box>
+            }}><EmojiEventsIcon sx={{ fontSize: 38, color: '#1d2320' }} /></Box>
 
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="h4" fontWeight={800} sx={{ color: 'white', lineHeight: 1.2, mb: 1 }}>
@@ -493,14 +485,14 @@ const TournamentDetails = () => {
                 <Chip
                   label={FORMAT_LABEL[tournament.format] || tournament.format}
                   size="small"
-                  sx={{ bgcolor: 'rgba(59,130,246,0.25)', color: '#93C5FD', fontWeight: 600, border: '1px solid rgba(59,130,246,0.4)' }}
+                  sx={{ bgcolor: 'rgba(241,239,232,0.10)', color: '#f1efe8', fontWeight: 600, border: '1px solid rgba(241,239,232,0.18)' }}
                 />
                 {tournament.location && (
                   <Chip
-                    icon={<LocationIcon sx={{ fontSize: '14px !important', color: '#94A3B8 !important' }} />}
+                    icon={<LocationIcon sx={{ fontSize: '14px !important', color: '#9d978a !important' }} />}
                     label={tournament.location}
                     size="small"
-                    sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#CBD5E1', border: '1px solid rgba(255,255,255,0.12)' }}
+                    sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#c8c3b5', border: '1px solid rgba(255,255,255,0.12)' }}
                   />
                 )}
               </Box>
@@ -508,41 +500,36 @@ const TournamentDetails = () => {
           </Box>
 
           {/* KPI strip */}
-          <Grid container spacing={2} sx={{ mt: 2.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }, mt: 3, borderTop: '1px solid rgba(241,239,232,0.14)', pt: 2.5 }}>
             {[
-              { icon: '👥', val: `${teams.length}`, sub: `/ ${tournament.maxTeams || 16}`, label: 'Équipes', color: '#3B82F6' },
-              { icon: '📅', val: matches.length,    sub: '',                               label: 'Matchs',  color: '#22C55E' },
-              { icon: '✅', val: completedMatches,  sub: '',                               label: 'Terminés',color: '#F59E0B' },
-              { icon: '⚽', val: totalGoals,        sub: '',                               label: 'Buts',    color: '#8B5CF6' },
-              { icon: '📈', val: avgGoals,          sub: '',                               label: 'Buts/match', color: '#EC4899' },
-            ].map(({ icon, val, sub, label, color }) => (
-              <Grid item xs={6} sm={4} md key={label}>
-                <Box sx={{
-                  bgcolor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 2.5, p: 1.5, textAlign: 'center',
-                }}>
-                  <Typography sx={{ fontSize: 22 }}>{icon}</Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
-                    <Typography sx={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.1 }}>{val}</Typography>
+              { val: `${teams.length}`, sub: `/ ${tournament.maxTeams || 16}`, label: 'Équipes', color: '#f1efe8' },
+              { val: matches.length,    sub: '',                               label: 'Matchs',  color: '#f1efe8' },
+              { val: completedMatches,  sub: '',                               label: 'Terminés',color: '#f1efe8' },
+              { val: totalGoals,        sub: '',                               label: 'Buts',    color: '#f1efe8' },
+              { val: avgGoals,          sub: '',                               label: 'Buts/match', color: '#f1efe8' },
+            ].map(({ val, sub, label, color }, i) => (
+                <Box key={label} sx={{ px: 2.5, py: 0.5, borderLeft: i ? '1px solid rgba(241,239,232,0.14)' : 'none' }}>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                    <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: 34, fontWeight: 700, color, lineHeight: 1 }}>{val}</Typography>
                     {sub && <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{sub}</Typography>}
                   </Box>
-                  <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', mt: 0.25 }}>{label}</Typography>
+                  <Typography sx={{ fontSize: 13, color: '#bdb9ad', mt: 0.5 }}>{label}</Typography>
                 </Box>
-              </Grid>
             ))}
-          </Grid>
+          </Box>
         </Box>
       </Paper>
 
       {/* ── Tabs ── */}
       <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
         <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}
-          sx={{ borderBottom: '1px solid #e2e8f0', px: 1, bgcolor: '#FAFAFA' }}
+          sx={{ borderBottom: '1px solid #dcd8cc', px: 1, bgcolor: '#f6f4ee' }}
           variant="scrollable" scrollButtons="auto">
-          <Tab label="📋 Informations" />
-          <Tab label="👥 Équipes" />
-          <Tab label={isLeague ? '📊 Classement' : '🏆 Tableau'} />
-          <Tab label="⚽ Statistiques" />
+          <Tab label="Informations" />
+          <Tab label="Équipes" />
+          <Tab label={isLeague ? 'Classement' : 'Tableau'} />
+          <Tab label="Statistiques" />
         </Tabs>
 
         {/* ── Tab 0 : Informations ── */}
@@ -553,30 +540,30 @@ const TournamentDetails = () => {
             <Grid item xs={12} md={7}>
 
               {/* Dates & lieu */}
-              <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, p: 2.5, mb: 2.5 }}>
+              <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, p: 2.5, mb: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <Box sx={{ bgcolor: '#EFF6FF', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
-                    <CalendarIcon sx={{ color: '#3B82F6', fontSize: 18 }} />
+                  <Box sx={{ bgcolor: '#ecebe4', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
+                    <CalendarIcon sx={{ color: '#c8410e', fontSize: 18 }} />
                   </Box>
-                  <Typography fontWeight={700} fontSize={14} color="#1E293B">Calendrier & Lieu</Typography>
+                  <Typography fontWeight={700} fontSize={14} color="#2a2925">Calendrier & Lieu</Typography>
                 </Box>
                 <Grid container spacing={2}>
                   {[
-                    { label: 'Date de début',  value: tournament.startDate ? fmt(tournament.startDate) : '—', icon: '📅' },
-                    { label: 'Date de fin',    value: tournament.endDate   ? fmt(tournament.endDate)   : '—', icon: '🏁' },
-                    { label: 'Lieu',           value: tournament.location  || '—',                           icon: '📍' },
+                    { label: 'Date de début',  value: tournament.startDate ? fmt(tournament.startDate) : '—' },
+                    { label: 'Date de fin',    value: tournament.endDate   ? fmt(tournament.endDate)   : '—' },
+                    { label: 'Lieu',           value: tournament.location  || '—' },
                     { label: 'Durée',          value: (() => {
                         if (!tournament.startDate || !tournament.endDate) return '—';
                         const days = Math.round((new Date(tournament.endDate) - new Date(tournament.startDate)) / 86400000);
                         return days <= 0 ? '1 jour' : `${days} jour${days > 1 ? 's' : ''}`;
-                      })(), icon: '⏱️' },
-                  ].map(({ label, value, icon }) => (
+                      })() },
+                  ].map(({ label, value }) => (
                     <Grid item xs={6} key={label}>
-                      <Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5 }}>
+                      <Box sx={{ bgcolor: '#f6f4ee', borderRadius: 2, p: 1.5 }}>
                         <Typography fontSize={11} color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5 }}>
-                          {icon} {label}
+                          {label}
                         </Typography>
-                        <Typography fontSize={14} fontWeight={700} color="#0F172A">{value}</Typography>
+                        <Typography fontSize={14} fontWeight={700} color="#1d2320">{value}</Typography>
                       </Box>
                     </Grid>
                   ))}
@@ -584,26 +571,26 @@ const TournamentDetails = () => {
               </Paper>
 
               {/* Format & règles de compétition */}
-              <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, p: 2.5, mb: 2.5 }}>
+              <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, p: 2.5, mb: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <Box sx={{ bgcolor: '#F0FDF4', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
-                    <SportsIcon sx={{ color: '#22C55E', fontSize: 18 }} />
+                  <Box sx={{ bgcolor: '#ecebe4', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
+                    <SportsIcon sx={{ color: '#57534a', fontSize: 18 }} />
                   </Box>
-                  <Typography fontWeight={700} fontSize={14} color="#1E293B">Format de compétition</Typography>
+                  <Typography fontWeight={700} fontSize={14} color="#2a2925">Format de compétition</Typography>
                 </Box>
                 <Grid container spacing={2}>
                   {[
-                    { label: 'Format',         value: FORMAT_LABEL[tournament.format] || tournament.format || '—', icon: '🏆' },
-                    { label: 'Max équipes',    value: tournament.maxTeams || 16,                                    icon: '👥' },
-                    { label: 'Équipes inscrites', value: `${teams.length} / ${tournament.maxTeams || 16}`,         icon: '✅' },
-                    { label: 'Joueurs total',  value: teams.reduce((s, t) => s + (t.players?.length || 0), 0),    icon: '⚽' },
-                  ].map(({ label, value, icon }) => (
+                    { label: 'Format',         value: FORMAT_LABEL[tournament.format] || tournament.format || '—' },
+                    { label: 'Max équipes',    value: tournament.maxTeams || 16 },
+                    { label: 'Équipes inscrites', value: `${teams.length} / ${tournament.maxTeams || 16}` },
+                    { label: 'Joueurs total',  value: teams.reduce((s, t) => s + (t.players?.length || 0), 0) },
+                  ].map(({ label, value }) => (
                     <Grid item xs={6} key={label}>
-                      <Box sx={{ bgcolor: '#F8FAFC', borderRadius: 2, p: 1.5 }}>
+                      <Box sx={{ bgcolor: '#f6f4ee', borderRadius: 2, p: 1.5 }}>
                         <Typography fontSize={11} color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5 }}>
-                          {icon} {label}
+                          {label}
                         </Typography>
-                        <Typography fontSize={14} fontWeight={700} color="#0F172A">{value}</Typography>
+                        <Typography fontSize={14} fontWeight={700} color="#1d2320">{value}</Typography>
                       </Box>
                     </Grid>
                   ))}
@@ -613,7 +600,7 @@ const TournamentDetails = () => {
                 <Box sx={{ mt: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
                     <Typography fontSize={12} color="text.secondary">Progression des inscriptions</Typography>
-                    <Typography fontSize={12} fontWeight={700} color="#3B82F6">
+                    <Typography fontSize={12} fontWeight={700} color="#c8410e">
                       {Math.round((teams.length / (tournament.maxTeams || 16)) * 100)}%
                     </Typography>
                   </Box>
@@ -621,12 +608,12 @@ const TournamentDetails = () => {
                     variant="determinate"
                     value={Math.min(100, Math.round((teams.length / (tournament.maxTeams || 16)) * 100))}
                     sx={{
-                      height: 8, borderRadius: 4, bgcolor: '#E2E8F0',
+                      height: 8, borderRadius: 4, bgcolor: '#dcd8cc',
                       '& .MuiLinearProgress-bar': {
                         borderRadius: 4,
                         background: teams.length >= (tournament.maxTeams || 16)
-                          ? 'linear-gradient(90deg, #22C55E, #16A34A)'
-                          : 'linear-gradient(90deg, #3B82F6, #6366F1)',
+                          ? '#2f7d4a'
+                          : '#c8410e',
                       },
                     }}
                   />
@@ -638,12 +625,12 @@ const TournamentDetails = () => {
 
               {/* Avancement des matchs */}
               {matches.length > 0 && (
-                <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, p: 2.5 }}>
+                <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, p: 2.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Box sx={{ bgcolor: '#FEF3C7', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
+                    <Box sx={{ bgcolor: '#ecebe4', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
                       <GoalIcon sx={{ color: '#F59E0B', fontSize: 18 }} />
                     </Box>
-                    <Typography fontWeight={700} fontSize={14} color="#1E293B">Avancement des matchs</Typography>
+                    <Typography fontWeight={700} fontSize={14} color="#2a2925">Avancement des matchs</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
                     <Typography fontSize={12} color="text.secondary">Matchs terminés</Typography>
@@ -655,18 +642,18 @@ const TournamentDetails = () => {
                     variant="determinate"
                     value={matches.length ? Math.round((completedMatches / matches.length) * 100) : 0}
                     sx={{
-                      height: 8, borderRadius: 4, bgcolor: '#E2E8F0',
+                      height: 8, borderRadius: 4, bgcolor: '#dcd8cc',
                       '& .MuiLinearProgress-bar': {
-                        borderRadius: 4, background: 'linear-gradient(90deg, #F59E0B, #EF4444)',
+                        borderRadius: 4, background: '#F59E0B',
                       },
                     }}
                   />
                   <Box sx={{ display: 'flex', gap: 2, mt: 1.5, flexWrap: 'wrap' }}>
                     {[
-                      { label: 'Terminés', val: completedMatches, color: '#22C55E' },
-                      { label: 'À jouer',  val: matches.filter(m => m.status !== 'completed').length, color: '#3B82F6' },
-                      { label: 'Buts',     val: totalGoals, color: '#F59E0B' },
-                      { label: 'Moy. buts', val: avgGoals, color: '#8B5CF6' },
+                      { label: 'Terminés', val: completedMatches, color: '#f1efe8' },
+                      { label: 'À jouer',  val: matches.filter(m => m.status !== 'completed').length, color: '#f1efe8' },
+                      { label: 'Buts',     val: totalGoals, color: '#f1efe8' },
+                      { label: 'Moy. buts', val: avgGoals, color: '#f1efe8' },
                     ].map(({ label, val, color }) => (
                       <Box key={label} sx={{ textAlign: 'center', flex: 1 }}>
                         <Typography fontWeight={800} fontSize={18} color={color}>{val}</Typography>
@@ -682,15 +669,15 @@ const TournamentDetails = () => {
             <Grid item xs={12} md={5}>
 
               {/* Description */}
-              <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, p: 2.5, mb: 2.5 }}>
+              <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, p: 2.5, mb: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                  <Box sx={{ bgcolor: '#FDF4FF', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
-                    <AssessmentIcon sx={{ color: '#8B5CF6', fontSize: 18 }} />
+                  <Box sx={{ bgcolor: '#ecebe4', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
+                    <AssessmentIcon sx={{ color: '#c8410e', fontSize: 18 }} />
                   </Box>
-                  <Typography fontWeight={700} fontSize={14} color="#1E293B">Description</Typography>
+                  <Typography fontWeight={700} fontSize={14} color="#2a2925">Description</Typography>
                 </Box>
                 {tournament.description ? (
-                  <Typography fontSize={13} color="#475569" sx={{ lineHeight: 1.7 }}>
+                  <Typography fontSize={13} color="#57534a" sx={{ lineHeight: 1.7 }}>
                     {tournament.description}
                   </Typography>
                 ) : (
@@ -701,15 +688,15 @@ const TournamentDetails = () => {
               </Paper>
 
               {/* Règles */}
-              <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, p: 2.5, mb: 2.5 }}>
+              <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, p: 2.5, mb: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                  <Box sx={{ bgcolor: '#FEF2F2', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
-                    <StarIcon sx={{ color: '#EF4444', fontSize: 18 }} />
+                  <Box sx={{ bgcolor: '#ecebe4', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
+                    <StarIcon sx={{ color: '#57534a', fontSize: 18 }} />
                   </Box>
-                  <Typography fontWeight={700} fontSize={14} color="#1E293B">Règles du tournoi</Typography>
+                  <Typography fontWeight={700} fontSize={14} color="#2a2925">Règles du tournoi</Typography>
                 </Box>
                 {tournament.rules ? (
-                  <Typography fontSize={13} color="#475569" sx={{ whiteSpace: 'pre-line', lineHeight: 1.7 }}>
+                  <Typography fontSize={13} color="#57534a" sx={{ whiteSpace: 'pre-line', lineHeight: 1.7 }}>
                     {tournament.rules}
                   </Typography>
                 ) : (
@@ -721,31 +708,27 @@ const TournamentDetails = () => {
 
               {/* Aperçu des équipes */}
               {teams.length > 0 && (
-                <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, p: 2.5 }}>
+                <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, p: 2.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ bgcolor: '#EFF6FF', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
-                        <GroupIcon sx={{ color: '#3B82F6', fontSize: 18 }} />
+                      <Box sx={{ bgcolor: '#ecebe4', p: 0.75, borderRadius: 1.5, display: 'flex' }}>
+                        <GroupIcon sx={{ color: '#c8410e', fontSize: 18 }} />
                       </Box>
-                      <Typography fontWeight={700} fontSize={14} color="#1E293B">Équipes participantes</Typography>
+                      <Typography fontWeight={700} fontSize={14} color="#2a2925">Équipes participantes</Typography>
                     </Box>
                     <Chip label={teams.length} size="small"
-                      sx={{ bgcolor: '#DBEAFE', color: '#1D4ED8', fontWeight: 700 }} />
+                      sx={{ bgcolor: '#fbdccb', color: '#a3330a', fontWeight: 700 }} />
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {teams.slice(0, 6).map((team, i) => {
-                      const colors = ['#3B82F6','#22C55E','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#EC4899'];
-                      const bg = colors[i % colors.length];
                       const captain = team.players?.find(p => p.isCaptain);
                       return (
                         <Box key={team.id} sx={{
                           display: 'flex', alignItems: 'center', gap: 1.5,
-                          p: 1, borderRadius: 2, bgcolor: '#F8FAFC',
-                          cursor: 'pointer', '&:hover': { bgcolor: '#F1F5F9' },
+                          p: 1, borderRadius: 2, bgcolor: '#f6f4ee',
+                          cursor: 'pointer', '&:hover': { bgcolor: '#ecebe4' },
                         }} onClick={() => navigate(`/admin/teams/${team.id}`)}>
-                          <Avatar sx={{ width: 34, height: 34, bgcolor: bg, fontSize: 13, fontWeight: 800 }}>
-                            {team.name.charAt(0).toUpperCase()}
-                          </Avatar>
+                          <Scarf team={team} size="lg" />
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Typography fontSize={13} fontWeight={600} noWrap>{team.name}</Typography>
                             <Typography fontSize={11} color="text.secondary" noWrap>
@@ -754,7 +737,7 @@ const TournamentDetails = () => {
                             </Typography>
                           </Box>
                           <Chip label={team.players?.length || 0} size="small"
-                            sx={{ bgcolor: `${bg}18`, color: bg, fontWeight: 700, fontSize: 11 }} />
+                            sx={{ bgcolor: "#ecebe4", color: "#1d2320", fontWeight: 700, fontSize: 11 }} />
                         </Box>
                       );
                     })}
@@ -790,7 +773,7 @@ const TournamentDetails = () => {
           ) : (
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: '#f8fafc' }}>
+                <TableRow sx={{ bgcolor: '#f6f4ee' }}>
                   <TableCell sx={{ fontWeight: 700 }}>Équipe</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Joueurs</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Capitaine</TableCell>
@@ -837,12 +820,12 @@ const TournamentDetails = () => {
 
           {isLeague && (
             <Box>
-              <Typography variant="h6" fontWeight={700} mb={2}>📊 Classement</Typography>
+              <Typography variant="h6" fontWeight={700} mb={2}>Classement</Typography>
               <StandingsTable standings={standings} />
 
               {matches.length > 0 && (
                 <Box mt={4}>
-                  <Typography variant="h6" fontWeight={700} mb={2}>⚽ Résultats ({completedMatches}/{matches.length} matchs)</Typography>
+                  <Typography variant="h6" fontWeight={700} mb={2}>Résultats ({completedMatches}/{matches.length} matchs)</Typography>
                   {matches.map(m => {
                     const done = m.status === 'completed';
                     const hWin = winnerSide(m) === 'home';
@@ -859,14 +842,14 @@ const TournamentDetails = () => {
                           {m.homeTeam?.name || '?'}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5,
-                          bgcolor: done ? '#f1f5f9' : '#f8fafc', borderRadius: 1, px: 1.5, py: 0.5 }}>
+                          bgcolor: done ? '#ecebe4' : '#f6f4ee', borderRadius: 1, px: 1.5, py: 0.5 }}>
                           {done ? (
                             <>
-                              <Typography fontWeight={800} fontSize={15} color={hWin ? '#16a34a' : '#1e293b'}>
+                              <Typography fontWeight={800} fontSize={15} color='#1d2320'>
                                 {m.homeTeamScore}
                               </Typography>
                               <Typography color="text.secondary" mx={0.5}>–</Typography>
-                              <Typography fontWeight={800} fontSize={15} color={aWin ? '#16a34a' : '#1e293b'}>
+                              <Typography fontWeight={800} fontSize={15} color='#1d2320'>
                                 {m.awayTeamScore}
                               </Typography>
                             </>
@@ -892,7 +875,7 @@ const TournamentDetails = () => {
           {isKnockout && (
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" fontWeight={700}>🏆 Tableau d'élimination</Typography>
+                <Typography variant="h6" fontWeight={700}>Tableau d'élimination</Typography>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   {bracketLoading && <Chip label="Actualisation…" size="small" />}
                   {!matches.some(m => ['completed', 'in_progress', 'half_time'].includes(m.status)) && (
@@ -900,7 +883,7 @@ const TournamentDetails = () => {
                       Générer / Réinitialiser
                     </Button>
                   )}
-                  <Button variant="outlined" startIcon={<AssessmentIcon />} onClick={() => window.print()}>
+                  <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => window.print()}>
                     Imprimer
                   </Button>
                 </Box>
@@ -927,8 +910,8 @@ const TournamentDetails = () => {
         {/* ── Tab 3 : Statistiques ── */}
         <TabPanel value={activeTab} index={3}>
           {completedMatches === 0 ? (
-            <Paper elevation={0} sx={{ p: 6, textAlign: 'center', border: '1.5px dashed #E2E8F0', borderRadius: 3 }}>
-              <Typography fontSize={48} mb={1}>📊</Typography>
+            <Paper elevation={0} sx={{ p: 6, textAlign: 'center', border: '1.5px dashed #dcd8cc', borderRadius: 3 }}>
+              
               <Typography fontWeight={700} fontSize={16} mb={0.5}>Aucune statistique disponible</Typography>
               <Typography color="text.secondary" fontSize={13}>
                 Les statistiques apparaîtront dès que des matchs seront terminés.
@@ -940,54 +923,47 @@ const TournamentDetails = () => {
               {/* ── KPI Banner ── */}
               <Paper elevation={0} sx={{
                 mb: 3, borderRadius: 3, overflow: 'hidden',
-                background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                background: '#1d2320',
                 p: 2.5,
               }}>
-                <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700,
-                  letterSpacing: 1.5, textTransform: 'uppercase', mb: 2 }}>
+                <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', color: '#f1efe8', fontSize: 20, fontWeight: 700, mb: 2 }}>
                   Vue d'ensemble du tournoi
                 </Typography>
-                <Grid container spacing={2}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, 1fr)', md: 'repeat(6, 1fr)' } }}>
                   {[
-                    { icon: '⚽', label: 'Buts marqués',    val: totalGoals,        color: '#3B82F6' },
-                    { icon: '✅', label: 'Matchs terminés', val: completedMatches,  color: '#22C55E' },
-                    { icon: '📅', label: 'Total matchs',    val: matches.length,    color: '#8B5CF6' },
-                    { icon: '📈', label: 'Buts / match',    val: avgGoals,          color: '#F59E0B' },
-                    { icon: '👥', label: 'Équipes',         val: teams.length,      color: '#EC4899' },
-                    { icon: '🏃', label: 'Joueurs',         val: teams.reduce((s, t) => s + (t.players?.length || 0), 0), color: '#06B6D4' },
-                  ].map(({ icon, label, val, color }) => (
-                    <Grid item xs={6} sm={4} md={2} key={label}>
-                      <Box sx={{
-                        bgcolor: 'rgba(255,255,255,0.06)', border: `1px solid ${color}30`,
-                        borderRadius: 2.5, p: 1.5, textAlign: 'center',
-                        borderTop: `3px solid ${color}`,
-                      }}>
-                        <Typography fontSize={20}>{icon}</Typography>
-                        <Typography sx={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1.1, mt: 0.25 }}>{val}</Typography>
-                        <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', mt: 0.25 }}>{label}</Typography>
+                    { label: 'Buts marqués',    val: totalGoals,        color: '#f1efe8' },
+                    { label: 'Matchs terminés', val: completedMatches,  color: '#f1efe8' },
+                    { label: 'Total matchs',    val: matches.length,    color: '#f1efe8' },
+                    { label: 'Buts / match',    val: avgGoals,          color: '#f1efe8' },
+                    { label: 'Équipes',         val: teams.length,      color: '#f1efe8' },
+                    { label: 'Joueurs',         val: teams.reduce((s, t) => s + (t.players?.length || 0), 0), color: '#f1efe8' },
+                  ].map(({ label, val, color }, i) => (
+                      <Box key={label} sx={{ px: 2, py: 0.5, borderLeft: i ? '1px solid rgba(241,239,232,0.14)' : 'none' }}>
+                        
+                        <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: 32, fontWeight: 700, color, lineHeight: 1 }}>{val}</Typography>
+                        <Typography sx={{ fontSize: 13, color: '#bdb9ad', mt: 0.5 }}>{label}</Typography>
                       </Box>
-                    </Grid>
                   ))}
-                </Grid>
+                </Box>
               </Paper>
 
               <Grid container spacing={3}>
 
                 {/* ── Left: Meilleurs buteurs ── */}
                 <Grid item xs={12} md={5}>
-                  <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                  <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, overflow: 'hidden' }}>
                     {/* header */}
                     <Box sx={{
                       px: 2.5, py: 1.75,
-                      background: 'linear-gradient(90deg, #FEF3C7, #FFF7ED)',
-                      borderBottom: '1px solid #FDE68A',
+                      background: '#f6f4ee',
+                      borderBottom: '1px solid #dcd8cc',
                       display: 'flex', alignItems: 'center', gap: 1,
                     }}>
-                      <Typography fontSize={20}>🏅</Typography>
-                      <Typography fontWeight={800} fontSize={14} color="#92400E">Meilleurs buteurs</Typography>
+                      
+                      <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 18, color: '#1d2320' }}>Meilleurs buteurs</Typography>
                       {scorers.length > 0 && (
                         <Chip label={scorers.length} size="small"
-                          sx={{ ml: 'auto', bgcolor: '#F59E0B', color: 'white', fontWeight: 700, fontSize: 11 }} />
+                          sx={{ ml: 'auto', bgcolor: '#e3e0d6', color: '#1d2320', fontWeight: 700, fontSize: 11 }} />
                       )}
                     </Box>
                     <Box sx={{ p: 2 }}>
@@ -1000,23 +976,23 @@ const TournamentDetails = () => {
                 <Grid item xs={12} md={7}>
 
                   {/* Classement offensif par équipe */}
-                  <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, mb: 2.5, overflow: 'hidden' }}>
+                  <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, mb: 2.5, overflow: 'hidden' }}>
                     <Box sx={{
                       px: 2.5, py: 1.75,
-                      background: 'linear-gradient(90deg, #EFF6FF, #F0F9FF)',
-                      borderBottom: '1px solid #BFDBFE',
+                      background: '#f6f4ee',
+                      borderBottom: '1px solid #dcd8cc',
                       display: 'flex', alignItems: 'center', gap: 1,
                     }}>
-                      <Typography fontSize={20}>⚽</Typography>
-                      <Typography fontWeight={800} fontSize={14} color="#1D4ED8">Performance par équipe</Typography>
+                      
+                      <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 18, color: '#1d2320' }}>Performance par équipe</Typography>
                     </Box>
                     <Box sx={{ overflowX: 'auto' }}>
                       <Table size="small">
                         <TableHead>
-                          <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                          <TableRow sx={{ bgcolor: '#f6f4ee' }}>
                             {['#', 'Équipe', 'J', 'V', 'N', 'D', 'BP', 'BC', 'Pts'].map(h => (
                               <TableCell key={h} align={h === 'Équipe' ? 'left' : 'center'}
-                                sx={{ fontWeight: 700, fontSize: 11, color: '#64748B', py: 1 }}>
+                                sx={{ fontWeight: 700, fontSize: 11, color: '#6f6a5f', py: 1 }}>
                                 {h}
                               </TableCell>
                             ))}
@@ -1025,40 +1001,28 @@ const TournamentDetails = () => {
                         <TableBody>
                           {standings.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={9} sx={{ textAlign: 'center', py: 3, color: '#94A3B8', fontSize: 13 }}>
+                              <TableCell colSpan={9} sx={{ textAlign: 'center', py: 3, color: '#9d978a', fontSize: 13 }}>
                                 Aucun résultat disponible
                               </TableCell>
                             </TableRow>
                           ) : standings.map((row, i) => {
-                            const medal = i === 0 ? '#F59E0B' : i === 1 ? '#94A3B8' : i === 2 ? '#B45309' : null;
+                            const medal = i < 3;
                             return (
                               <TableRow key={row.id} hover
-                                sx={{ bgcolor: medal ? `${medal}08` : undefined, cursor: 'pointer' }}
+                                sx={{ cursor: 'pointer' }}
                                 onClick={() => navigate(`/admin/teams/${row.id}`)}>
                                 <TableCell align="center" sx={{ py: 1 }}>
-                                  {medal ? (
-                                    <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: medal,
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      color: 'white', fontSize: 11, fontWeight: 800, mx: 'auto' }}>
-                                      {i + 1}
-                                    </Box>
-                                  ) : (
-                                    <Typography fontSize={12} color="text.secondary">{i + 1}</Typography>
-                                  )}
+                                  <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 15, color: '#57534a' }}>{i + 1}</Typography>
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: medal ? 700 : 400, fontSize: 13 }}>{row.name}</TableCell>
+                                <TableCell sx={{ fontWeight: medal ? 700 : 400, fontSize: 13 }}><Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.25 }}><Scarf team={row} size="sm" />{row.name}</Box></TableCell>
                                 <TableCell align="center" sx={{ fontSize: 13 }}>{row.P}</TableCell>
-                                <TableCell align="center" sx={{ fontSize: 13, color: '#16A34A', fontWeight: 600 }}>{row.W}</TableCell>
+                                <TableCell align="center" sx={{ fontSize: 13, fontWeight: 600 }}>{row.W}</TableCell>
                                 <TableCell align="center" sx={{ fontSize: 13 }}>{row.D}</TableCell>
                                 <TableCell align="center" sx={{ fontSize: 13, color: '#DC2626' }}>{row.L}</TableCell>
                                 <TableCell align="center" sx={{ fontSize: 13 }}>{row.GF}</TableCell>
                                 <TableCell align="center" sx={{ fontSize: 13 }}>{row.GA}</TableCell>
                                 <TableCell align="center">
-                                  <Box sx={{ bgcolor: '#3B82F6', color: 'white', borderRadius: 1,
-                                    px: 1, py: 0.25, fontWeight: 800, fontSize: 13,
-                                    display: 'inline-block', minWidth: 28, textAlign: 'center' }}>
-                                    {row.Pts}
-                                  </Box>
+                                  <Typography component="span" sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 18, color: '#1d2320' }}>{row.Pts}</Typography>
                                 </TableCell>
                               </TableRow>
                             );
@@ -1091,19 +1055,19 @@ const TournamentDetails = () => {
                     if (totalYellow + totalRed === 0) return null;
 
                     return (
-                      <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                      <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, overflow: 'hidden' }}>
                         <Box sx={{
                           px: 2.5, py: 1.75,
-                          background: 'linear-gradient(90deg, #FEF9C3, #FFFBEB)',
-                          borderBottom: '1px solid #FDE047',
+                          background: '#f6f4ee',
+                          borderBottom: '1px solid #dcd8cc',
                           display: 'flex', alignItems: 'center', gap: 1,
                         }}>
-                          <Typography fontSize={20}>🟨</Typography>
-                          <Typography fontWeight={800} fontSize={14} color="#713F12">Discipline</Typography>
+                          
+                          <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 18, color: '#1d2320' }}>Discipline</Typography>
                           <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-                            <Chip label={`🟨 ${totalYellow}`} size="small"
+                            <Chip label={`Jaunes ${totalYellow}`} size="small"
                               sx={{ bgcolor: '#FEF08A', color: '#713F12', fontWeight: 700, fontSize: 11 }} />
-                            <Chip label={`🟥 ${totalRed}`} size="small"
+                            <Chip label={`Rouges ${totalRed}`} size="small"
                               sx={{ bgcolor: '#FEE2E2', color: '#991B1B', fontWeight: 700, fontSize: 11 }} />
                           </Box>
                         </Box>
@@ -1140,17 +1104,17 @@ const TournamentDetails = () => {
                 {/* ── Full width: derniers résultats ── */}
                 {completedMatches > 0 && (
                   <Grid item xs={12}>
-                    <Paper elevation={0} sx={{ border: '1.5px solid #E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                    <Paper elevation={0} sx={{ border: '1.5px solid #dcd8cc', borderRadius: 3, overflow: 'hidden' }}>
                       <Box sx={{
                         px: 2.5, py: 1.75,
-                        background: 'linear-gradient(90deg, #F0FDF4, #ECFDF5)',
-                        borderBottom: '1px solid #BBF7D0',
+                        background: '#f6f4ee',
+                        borderBottom: '1px solid #dcd8cc',
                         display: 'flex', alignItems: 'center', gap: 1,
                       }}>
-                        <Typography fontSize={20}>🏁</Typography>
-                        <Typography fontWeight={800} fontSize={14} color="#166534">Derniers résultats</Typography>
+                        
+                        <Typography sx={{ fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700, fontSize: 18, color: '#1d2320' }}>Derniers résultats</Typography>
                         <Chip label={completedMatches} size="small"
-                          sx={{ ml: 'auto', bgcolor: '#22C55E', color: 'white', fontWeight: 700, fontSize: 11 }} />
+                          sx={{ ml: 'auto', bgcolor: '#e3e0d6', color: '#1d2320', fontWeight: 700, fontSize: 11 }} />
                       </Box>
                       <Box sx={{ p: 2 }}>
                         <Grid container spacing={1.5}>
@@ -1161,8 +1125,8 @@ const TournamentDetails = () => {
                             return (
                               <Grid item xs={12} sm={6} md={4} key={m.id}>
                                 <Box sx={{
-                                  border: '1px solid #E2E8F0', borderRadius: 2, p: 1.5,
-                                  bgcolor: '#FAFAFA',
+                                  border: '1px solid #dcd8cc', borderRadius: 2, p: 1.5,
+                                  bgcolor: '#f6f4ee',
                                 }}>
                                   {m.date && (
                                     <Typography fontSize={10} color="text.disabled" textAlign="center" mb={0.75}>
@@ -1176,16 +1140,16 @@ const TournamentDetails = () => {
                                     </Typography>
                                     <Box sx={{
                                       display: 'flex', alignItems: 'center', gap: 0.5,
-                                      bgcolor: draw ? '#F1F5F9' : hWin ? '#DCFCE7' : '#FEE2E2',
+                                      bgcolor: draw ? '#ecebe4' : hWin ? '#e6efe7' : '#FEE2E2',
                                       borderRadius: 1.5, px: 1.25, py: 0.5, flexShrink: 0,
                                     }}>
                                       <Typography fontWeight={800} fontSize={16}
-                                        color={hWin ? '#16A34A' : draw ? '#475569' : '#DC2626'}>
+                                        color={hWin ? '#2f7d4a' : draw ? '#57534a' : '#DC2626'}>
                                         {m.homeTeamScore}
                                       </Typography>
                                       <Typography color="text.disabled" fontSize={12} mx={0.25}>–</Typography>
                                       <Typography fontWeight={800} fontSize={16}
-                                        color={aWin ? '#16A34A' : draw ? '#475569' : '#DC2626'}>
+                                        color={aWin ? '#2f7d4a' : draw ? '#57534a' : '#DC2626'}>
                                         {m.awayTeamScore}
                                       </Typography>
                                     </Box>

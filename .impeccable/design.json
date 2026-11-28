@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-28T12:00:00Z",
+  "title": "Design System: FootPro Admin",
+  "extensions": {
+    "colorMeta": {
+      "flare": { "role": "primary", "displayName": "Flare Orange", "canonical": "#ff5a1f", "tonalRamp": ["#5c1d05", "#a3330a", "#c8410e", "#ff5a1f", "#ff8a5c", "#f6b89a", "#fbdccb", "#fdeee6"] },
+      "flare-deep": { "role": "primary", "displayName": "Flare Deep", "canonical": "#c8410e", "tonalRamp": ["#5c1d05", "#a3330a", "#c8410e", "#ff5a1f", "#ff8a5c", "#f6b89a", "#fbdccb", "#fdeee6"] },
+      "flare-ink": { "role": "primary", "displayName": "Flare Ink", "canonical": "#a3330a", "tonalRamp": ["#5c1d05", "#a3330a", "#c8410e", "#ff5a1f", "#ff8a5c", "#f6b89a", "#fbdccb", "#fdeee6"] },
+      "flare-wash": { "role": "primary", "displayName": "Flare Wash", "canonical": "#fdeee6" },
+      "flare-wash-strong": { "role": "primary", "displayName": "Flare Wash Strong", "canonical": "#fbdccb" },
+      "charcoal-rail": { "role": "neutral", "displayName": "Charcoal Rail", "canonical": "#1d2320", "tonalRamp": ["#121614", "#1d2320", "#2a2925", "#3f3c36", "#57534a", "#6f6a5f", "#9d978a", "#c8c3b5"] },
+      "rail-active": { "role": "neutral", "displayName": "Rail Active", "canonical": "#2c3430" },
+      "rail-text": { "role": "neutral", "displayName": "Rail Text", "canonical": "#a9ada4" },
+      "rail-text-strong": { "role": "neutral", "displayName": "Rail Text Strong", "canonical": "#e9e6dc" },
+      "concrete": { "role": "neutral", "displayName": "Stand Concrete", "canonical": "#f1efe8", "tonalRamp": ["#3f3c36", "#57534a", "#6f6a5f", "#9d978a", "#c8c3b5", "#dcd8cc", "#e9e6dc", "#f1efe8"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#ffffff" },
+      "terrace-wash": { "role": "neutral", "displayName": "Terrace Wash", "canonical": "#ecebe4" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#dcd8cc" },
+      "field-stroke": { "role": "neutral", "displayName": "Field Stroke", "canonical": "#c8c3b5" },
+      "stone-muted": { "role": "neutral", "displayName": "Stone Muted", "canonical": "#6f6a5f" },
+      "stone-secondary": { "role": "neutral", "displayName": "Stone Secondary", "canonical": "#57534a" },
+      "pitch-green": { "role": "semantic", "displayName": "Pitch Green", "canonical": "#2f7d4a" },
+      "alert-red": { "role": "semantic", "displayName": "Alert Red", "canonical": "#dc2626" },
+      "alert-red-ink": { "role": "semantic", "displayName": "Alert Red Ink", "canonical": "#991b1b" },
+      "card-yellow": { "role": "semantic", "displayName": "Card Yellow", "canonical": "#f5c518" },
+      "card-red": { "role": "semantic", "displayName": "Card Red", "canonical": "#d32f2f" },
+      "night-ground": { "role": "neutral", "displayName": "Night Ground", "canonical": "#171c1a", "tonalRamp": ["#121614", "#171c1a", "#1f2522", "#29302c", "#39413c", "#59615b", "#7f877f", "#a6ada4"] },
+      "night-paper": { "role": "neutral", "displayName": "Night Paper", "canonical": "#1f2522" },
+      "night-raised": { "role": "neutral", "displayName": "Night Raised", "canonical": "#29302c" },
+      "night-line": { "role": "neutral", "displayName": "Night Line", "canonical": "#39413c" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "KPI tile numbers." },
+      "headline": { "displayName": "Headline", "purpose": "Page title of each admin section." },
+      "title": { "displayName": "Title", "purpose": "Tournament group headings and dialog titles." },
+      "title-sm": { "displayName": "Title Small", "purpose": "Section-card headers and round labels." },
+      "score": { "displayName": "Score", "purpose": "Centre score column in match rows." },
+      "body": { "displayName": "Body", "purpose": "Default text and rail labels." },
+      "body-sm": { "displayName": "Body Small", "purpose": "Table cells, inputs, menus." },
+      "button": { "displayName": "Button", "purpose": "All button labels, sentence case." },
+      "label": { "displayName": "Label", "purpose": "Uppercase table column heads and dialog section labels." }
+    },
+    "shadows": [
+      { "name": "button-rest", "value": "0px 1px 2px rgba(29,35,32,0.05)", "purpose": "Contained and outlined buttons." },
+      { "name": "dialog-lift", "value": "0 24px 48px -12px rgba(29,35,32,0.35)", "purpose": "Modal dialogs only, over a rgba(29,35,32,0.45) scrim." },
+      { "name": "focus-halo", "value": "0 0 0 4px rgba(255,90,31,0.25)", "purpose": "Focused primary buttons; inputs use 0.20 alpha." },
+      { "name": "focus-outline", "value": "2px solid #ff5a1f, offset 2px", "purpose": "Global :focus-visible outline." }
+    ],
+    "motion": [
+      { "name": "page-enter", "value": "0.28s cubic-bezier(0.22, 1, 0.36, 1), translateY 14px to 0 with fade", "purpose": "Route change in the admin content area." },
+      { "name": "rail-collapse", "value": "0.2s cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Rail width and content margin when collapsing." },
+      { "name": "state-quick", "value": "0.12s-0.15s ease", "purpose": "Button press (1px down), hover colours, table row highlight." },
+      { "name": "live-pulse", "value": "1.5s infinite, opacity 1 to 0.2", "purpose": "Live indicator dot on in-progress matches." },
+      { "name": "kpi-count-up", "value": "900ms linear count", "purpose": "KPI values count up on load." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "600px" },
+      { "name": "rail-autocollapse", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one orange action per view, top right (Nouveau, Planifier un match).",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z\"/></svg>Planifier un match</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 10px 16px; background: #c8410e; color: #ffffff; border: 1px solid #c8410e; border-radius: 10px; font-family: Barlow, 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; line-height: 1.25rem; box-shadow: 0px 1px 2px rgba(29,35,32,0.05); cursor: pointer; transition: background-color 0.15s ease, transform 0.12s ease, box-shadow 0.12s ease; } .ds-btn-primary:hover { background: #a3330a; border-color: #a3330a; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0px 1px 2px rgba(29,35,32,0.05), 0 0 0 4px rgba(255,90,31,0.25); } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined neutral action (Annuler, filters, secondary commands).",
+      "html": "<button class=\"ds-btn-secondary\">Annuler</button>",
+      "css": ".ds-btn-secondary { height: 40px; padding: 10px 16px; background: #ffffff; color: #3f3c36; border: 1px solid #c8c3b5; border-radius: 10px; font-family: Barlow, 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; box-shadow: 0px 1px 2px rgba(29,35,32,0.05); cursor: pointer; transition: background-color 0.15s ease, transform 0.12s ease; } .ds-btn-secondary:hover { background: #f1efe8; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(29,35,32,0.14); } .ds-btn-secondary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Small outlined field on paper; focus turns the stroke flare-deep with a soft halo.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Nom de l'équipe</span><input class=\"ds-input\" value=\"Wydad Athletic Club\"></label>",
+      "css": ".ds-field { display: inline-flex; flex-direction: column; gap: 6px; font-family: Barlow, 'Segoe UI', system-ui, sans-serif; } .ds-field-label { font-size: 0.875rem; color: #57534a; } .ds-field:focus-within .ds-field-label { color: #a3330a; } .ds-input { height: 40px; width: 260px; padding: 8px 12px; background: #ffffff; color: #1d2320; border: 1px solid #c8c3b5; border-radius: 10px; font: inherit; font-size: 0.875rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; } .ds-input:hover { border-color: #9d978a; } .ds-input:focus { outline: none; border-color: #c8410e; box-shadow: 0 0 0 4px rgba(255,90,31,0.20); }"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-rail",
+      "description": "Charcoal rail with brand tile and section items; active item gets a raised block, flare icon and bold white label.",
+      "html": "<nav class=\"ds-rail\"><div class=\"ds-rail-brand\"><span class=\"ds-rail-tile\"></span><span class=\"ds-rail-word\">Foot<b>Pro</b></span></div><a class=\"ds-rail-item\" href=\"#\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z\"/></svg>Tournois</a><a class=\"ds-rail-item is-active\" href=\"#\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg>Matchs</a></nav>",
+      "css": ".ds-rail { width: 260px; padding: 20px 0 12px; background: #1d2320; font-family: Barlow, 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; gap: 4px; } .ds-rail-brand { display: flex; align-items: center; gap: 10px; padding: 0 20px 16px; } .ds-rail-tile { width: 34px; height: 34px; border-radius: 8px; background: #ff5a1f; } .ds-rail-word { font-family: 'Barlow Condensed', Barlow, sans-serif; font-weight: 700; font-size: 1.45rem; letter-spacing: 0.02em; color: #e9e6dc; } .ds-rail-word b { color: #ff5a1f; } .ds-rail-item { display: flex; align-items: center; gap: 12px; height: 44px; margin: 0 8px; padding: 0 12px; border-radius: 8px; color: #e9e6dc; font-size: 0.95rem; text-decoration: none; transition: background-color 0.15s ease; } .ds-rail-item svg { color: #a9ada4; } .ds-rail-item:hover { background: rgba(241,239,232,0.06); } .ds-rail-item:focus-visible { outline: none; box-shadow: 0 0 0 2px #ff5a1f; } .ds-rail-item.is-active { background: #2c3430; color: #ffffff; font-weight: 700; } .ds-rail-item.is-active svg { color: #ff5a1f; }"
+    },
+    {
+      "name": "Status Chips",
+      "kind": "chip",
+      "refersTo": "chip-live",
+      "description": "Wash-and-ink status chips for match states.",
+      "html": "<span class=\"ds-chip ds-chip-live\">En direct</span> <span class=\"ds-chip ds-chip-scheduled\">Planifié</span> <span class=\"ds-chip ds-chip-done\">Terminé</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 8px; font-family: Barlow, 'Segoe UI', system-ui, sans-serif; font-size: 0.72rem; font-weight: 600; } .ds-chip-live { background: #fdeee6; color: #a3330a; } .ds-chip-scheduled { background: #ecebe4; color: #57534a; } .ds-chip-done { background: #e3e0d6; color: #1d2320; }"
+    },
+    {
+      "name": "KPI Tile",
+      "kind": "card",
+      "refersTo": "kpi-tile",
+      "description": "Flat white tile: muted icon and label, big condensed tabular number.",
+      "html": "<div class=\"ds-kpi\"><div class=\"ds-kpi-label\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z\"/></svg>Équipes</div><div class=\"ds-kpi-value\">16</div></div>",
+      "css": ".ds-kpi { width: 220px; padding: 14px 18px; background: #ffffff; border: 1px solid #dcd8cc; border-radius: 10px; font-family: Barlow, 'Segoe UI', system-ui, sans-serif; } .ds-kpi-label { display: flex; align-items: center; gap: 8px; color: #57534a; font-size: 0.8rem; font-weight: 600; } .ds-kpi-value { margin-top: 4px; font-family: 'Barlow Condensed', Barlow, sans-serif; font-size: 2.4rem; font-weight: 700; line-height: 1.05; color: #1d2320; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Match Row",
+      "kind": "custom",
+      "refersTo": "scarf-stripe",
+      "description": "Signature row: home right-aligned to a centre score, away left; scarf stripes carry club colours; live rows tint flare.",
+      "html": "<div class=\"ds-match is-live\"><span class=\"ds-team ds-home\">Wydad Athletic Club <span class=\"ds-scarf\" style=\"--a:#d32f2f;--b:#ffffff\"></span></span><span class=\"ds-score\">2 – 1</span><span class=\"ds-team\"><span class=\"ds-scarf\" style=\"--a:#1d2320;--b:#ffffff\"></span> Sporting Chabab Mohammadia</span><span class=\"ds-chip-live\">En direct</span></div><div class=\"ds-match\"><span class=\"ds-team ds-home\">AS Lafarge Maroc <span class=\"ds-scarf\" style=\"--a:#1e4fa8;--b:#f5c518\"></span></span><span class=\"ds-score is-time\">16:10</span><span class=\"ds-team\"><span class=\"ds-scarf\" style=\"--a:#d32f2f;--b:#ffffff\"></span> Wydad Athletic Club</span><span></span></div>",
+      "css": ".ds-match { display: grid; grid-template-columns: 1fr 96px 1fr 90px; align-items: center; gap: 12px; width: 640px; padding: 10px 16px; background: #ffffff; border-bottom: 1px solid #e9e6dc; font-family: Barlow, 'Segoe UI', system-ui, sans-serif; font-size: 0.9rem; color: #1d2320; transition: background-color 0.12s ease; } .ds-match:hover { background: #fbfaf7; } .ds-match.is-live { background: rgba(255,90,31,0.07); } .ds-team { display: flex; align-items: center; gap: 10px; } .ds-home { justify-content: flex-end; text-align: right; } .ds-score { text-align: center; font-family: 'Barlow Condensed', Barlow, sans-serif; font-weight: 700; font-size: 1.45rem; line-height: 1; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; } .ds-match.is-live .ds-score { color: #c8410e; } .ds-score.is-time { font-size: 1.05rem; color: #57534a; } .ds-scarf { display: inline-block; flex-shrink: 0; width: 24px; height: 13px; border-radius: 2px; background: repeating-linear-gradient(90deg, var(--a) 0 6px, var(--b) 6px 9px); box-shadow: inset 0 0 0 1px rgba(29,35,32,0.14); } .ds-chip-live { justify-self: start; height: 22px; padding: 0 8px; border-radius: 8px; background: #fdeee6; color: #a3330a; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Tribune & tifo",
+    "overview": "The admin panel reads like an organised stand on derby day. The ground is warm stand concrete, the navigation is a charcoal rail, and a single flare orange marks what the organiser can act on and what is live right now. Everything else that carries colour belongs to the clubs: each team wears its two real colours as a knitted scarf stripe, so a fixture list or a league table is recognised by colour before a name is read.\n\nThe system is dense and desk-first. Titles and big numbers speak in Barlow Condensed, the terrace-board voice; everything operational speaks in Barlow at small, steady sizes, with tabular figures everywhere so scores, dates and standings line up in columns. Panels are flat white sheets on hairline borders with modest radii; depth comes from tone (concrete under paper, charcoal beside both), not from shadow. Home and away sit symmetrically around a centre score column, the way a match is actually read.\n\nScope: this system covers the admin web panel (frontend/, admin routes and login). The scouting web app and the Flutter mobile app have not been redesigned yet and are not part of this system; bringing them into it is an open item.\n\nConfirmed rejection: the grey-card SaaS dashboard with one blue accent, which this world replaced (the previous navy and teal look).",
+    "keyCharacteristics": [
+      "Warm concrete ground, white flat panels, charcoal rail.",
+      "One UI accent, flare orange; club colours live only inside scarf stripes.",
+      "Barlow Condensed for titles, KPIs and scores; Barlow for UI; tabular figures throughout.",
+      "Home club right-aligned to a centre score, away club left-aligned from it.",
+      "Live state is one recipe: orange dot, orange-tinted row, deep-orange score."
+    ],
+    "rules": [
+      { "name": "The One Flare Rule", "body": "Flare orange is the only interface accent: primary actions, selection, focus, live. No second accent hue is introduced for UI chrome.", "section": "colors" },
+      { "name": "The Club Colours Stay On The Scarf Rule", "body": "A club's own colours appear only inside its scarf stripe (or its large scarf on the Live screen). They never tint a row, a chip, a heading or a button.", "section": "colors" },
+      { "name": "The Flare Ink Rule", "body": "Orange text and orange fills under white text use flare-deep or flare-ink. Pure flare is for dots, marks, outlines and tints.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "Condensed speaks headings and numbers; Barlow speaks everything you operate. Never set body copy, labels or buttons in Condensed.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Figures are always tabular so columns of scores, dates and standings align.", "section": "typography" },
+      { "name": "The Flat Panel Rule", "body": "Panels lie flat on hairlines. A shadow means the element floats above the page (dialog, menu, popover), never that it is important.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep flare orange the only interface accent, and write orange text in flare-deep (#c8410e) or flare-ink (#a3330a).",
+      "Do give every club appearance a scarf stripe beside its name, in tables, standings, brackets and the Live header.",
+      "Do set titles, KPIs and scores in Barlow Condensed 700 and keep every figure tabular.",
+      "Do align home to the right of a centre score column and away to its left.",
+      "Do mark live with the one recipe: flare dot, 7% flare row tint, flare-deep score, \"En direct\" chip.",
+      "Do keep panels flat on 1px hairlines with 10px corners; reserve shadows for dialogs, menus and popovers."
+    ],
+    "donts": [
+      "Don't use club colours outside the scarf stripe, and don't add a second UI accent hue.",
+      "Don't use decorative gradients or glass on surfaces; the scarf's hard-stop knit is the only gradient in the world.",
+      "Don't put flare orange (#ff5a1f) behind white text or use it for body-size text.",
+      "Don't set buttons, labels or body copy in Condensed, or uppercase anything but small tracked labels (table column heads, dialog section labels).",
+      "Don't use emoji as icons; use Material pictograms or the drawn cards.",
+      "Don't return to the navy-and-teal, grey-card SaaS look this world replaced."
+    ]
+  }
+}
