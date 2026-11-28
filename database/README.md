@@ -13,7 +13,7 @@ Comptes principaux :
 | Admin   | admin@gmail.com         |
 | Coach   | coach@gmail.com         |
 | Joueur  | player@gmail.com        |
-| Arbitre | arbitre.test@footpro.com |
+| Délégué | delegue@gmail.com       |
 
 ## Restaurer
 

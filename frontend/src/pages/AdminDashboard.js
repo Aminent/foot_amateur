@@ -311,6 +311,13 @@ const AdminDashboard = () => {
   const [refereeForm, setRefereeForm] = useState(emptyRefereeForm);
   const [refereeDialog, setRefereeDialog] = useState(false);
   const [editingReferee, setEditingReferee] = useState(null);
+  // délégués de match (suivi en direct depuis l'app mobile)
+  const [delegates, setDelegates] = useState([]);
+  const emptyDelegateForm = { name: '', email: '', password: '', phone: '' };
+  const [delegateForm, setDelegateForm] = useState(emptyDelegateForm);
+  const [delegateDialog, setDelegateDialog] = useState(false);
+  const [editingDelegate, setEditingDelegate] = useState(null);
+
   const openConfirm = (title, message, onConfirm) => setConfirmDlg({ open: true, title, message, onConfirm });
   const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false }));
 
@@ -320,7 +327,7 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    try { await Promise.all([fetchTournaments(), fetchTeams(), fetchPlayers(), fetchCoaches(), fetchMatches(), fetchApplications(), fetchReferees()]); }
+    try { await Promise.all([fetchTournaments(), fetchTeams(), fetchPlayers(), fetchCoaches(), fetchMatches(), fetchApplications(), fetchReferees(), fetchDelegates()]); }
     catch { showError('Erreur lors du chargement des données'); }
     finally { setLoading(false); }
   };
@@ -373,6 +380,37 @@ const AdminDashboard = () => {
     if (r.ok) { await fetchReferees(); showSuccess('Arbitre supprimé'); }
     else { const e = await r.json(); showError(e.message || 'Erreur suppression'); }
   };
+
+
+  const fetchDelegates = async () => {
+    try {
+      const r = await fetch(`${API}/delegates`, { headers: authHeaders() });
+      if (r.ok) { const d = await r.json(); setDelegates(d.delegates || []); }
+    } catch { setDelegates([]); }
+  };
+
+  const handleSaveDelegate = async () => {
+    const isEdit = !!editingDelegate;
+    const body = isEdit
+      ? { name: delegateForm.name, phone: delegateForm.phone, ...(delegateForm.password ? { password: delegateForm.password } : {}) }
+      : delegateForm;
+    const r = await fetch(isEdit ? `${API}/delegates/${editingDelegate.id}` : `${API}/delegates`, {
+      method: isEdit ? 'PUT' : 'POST', headers: authHeaders(), body: JSON.stringify(body),
+    });
+    if (r.ok) {
+      setDelegateDialog(false); setEditingDelegate(null); setDelegateForm(emptyDelegateForm);
+      await fetchDelegates(); showSuccess(isEdit ? 'Délégué modifié' : 'Délégué créé');
+    } else { const e = await r.json(); showError(e.message || 'Erreur'); }
+  };
+
+  const handleDeleteDelegate = async (d) => {
+    const r = await fetch(`${API}/delegates/${d.id}`, { method: 'DELETE', headers: authHeaders() });
+    if (r.ok) { await Promise.all([fetchDelegates(), fetchMatches()]); showSuccess('Délégué supprimé'); }
+    else { const e = await r.json(); showError(e.message || 'Erreur suppression'); }
+  };
+
+  const assignDelegate = (matchId, delegateId) =>
+    fetch(`${API}/delegates/match/${matchId}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ delegateId: delegateId || null }) });
 
 
   const fetchMatches = async () => {
@@ -600,8 +638,15 @@ const AdminDashboard = () => {
     if (matchForm.homeTeamId === matchForm.awayTeamId) return showError('Les équipes domicile et visiteur doivent être différentes');
     try {
       const body = { ...matchForm, date: buildMatchDatetime(matchForm.date, matchForm.time), roundNumber: matchForm.roundNumber || undefined };
-      delete body.time;
+      const delegateId = body.delegateId;
+      delete body.time; delete body.delegateId;
       const r = await fetch(`${API}/matches`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+      if (r.ok && delegateId) {
+        const d = await r.clone().json();
+        const rd = await assignDelegate(d.match?.id ?? d.id, delegateId);
+        if (!rd.ok) { const e = await rd.json(); showError(e.message || 'Match créé, mais délégué non affecté'); }
+        await fetchDelegates();
+      }
       if (r.ok) { setMatchFormDialog(false); setMatchForm(emptyMatchForm); await fetchMatches(); showSuccess('Match planifié'); }
       else { const e = await r.json(); showError(e.message || 'Erreur création match'); }
     } catch { showError('Erreur création match'); }
@@ -612,14 +657,19 @@ const AdminDashboard = () => {
     const dt = m.date ? new Date(m.date) : null;
     const dateStr = dt ? dt.toISOString().split('T')[0] : '';
     const timeStr = dt ? dt.toTimeString().slice(0, 5) : '15:00';
-    setMatchForm({ tournamentId: m.tournamentId || '', homeTeamId: m.homeTeamId || '', awayTeamId: m.awayTeamId || '', date: dateStr, time: timeStr, location: m.location || '', roundNumber: m.roundNumber?.toString() || '', referee: m.referee || '', notes: m.notes || '' });
+    setMatchForm({ tournamentId: m.tournamentId || '', homeTeamId: m.homeTeamId || '', awayTeamId: m.awayTeamId || '', date: dateStr, time: timeStr, location: m.location || '', roundNumber: m.roundNumber?.toString() || '', referee: m.referee || '', delegateId: m.delegateId || '', notes: m.notes || '' });
     setMatchFormDialog(true);
   };
 
   const handleUpdateMatch = async () => {
     try {
       const body = { ...matchForm, date: buildMatchDatetime(matchForm.date, matchForm.time), roundNumber: matchForm.roundNumber || undefined };
-      delete body.time;
+      if (String(matchForm.delegateId || '') !== String(editingMatch.delegateId || '')) {
+        const rd = await assignDelegate(editingMatch.id, matchForm.delegateId);
+        if (!rd.ok) { const e = await rd.json(); return showError(e.message || 'Erreur délégué'); }
+        await fetchDelegates();
+      }
+      delete body.time; delete body.delegateId;
       const r = await fetch(`${API}/matches/${editingMatch.id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(body) });
       if (r.ok) { setMatchFormDialog(false); setEditingMatch(null); setMatchForm(emptyMatchForm); await fetchMatches(); showSuccess('Match modifié'); }
       else { const e = await r.json(); showError(e.message || 'Erreur mise à jour'); }
@@ -727,6 +777,7 @@ const AdminDashboard = () => {
     { id: 6, label: 'Matchs' },
     { id: 7, label: 'Candidatures' },
     { id: 8, label: 'Arbitres' },
+    { id: 9, label: 'Délégués' },
   ];
 
   const kpiCards = [
@@ -1186,7 +1237,7 @@ const AdminDashboard = () => {
                 <Card sx={{ border: '1px solid', borderColor: 'divider', boxShadow: 'none', borderRadius: 2 }}>
                   <TableContainer>
                     <Table>
-                      <TableHead2 cols={[{ label: 'Date' }, { label: 'Domicile' }, { label: 'Score' }, { label: 'Visiteur' }, { label: 'Lieu' }, { label: 'Statut' }, { label: 'Actions', align: 'right' }]} />
+                      <TableHead2 cols={[{ label: 'Date' }, { label: 'Domicile' }, { label: 'Score' }, { label: 'Visiteur' }, { label: 'Lieu' }, { label: 'Délégué' }, { label: 'Statut' }, { label: 'Actions', align: 'right' }]} />
                       <TableBody>
                         {roundMatches.map(m => (
                           <TableRow key={m.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
@@ -1217,6 +1268,9 @@ const AdminDashboard = () => {
                             </TableCell>
                             <TableCell sx={{ color: 'text.secondary', fontSize: '0.8rem', maxWidth: 120 }}>
                               <Typography noWrap sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>{m.location || '—'}</Typography>
+                            </TableCell>
+                            <TableCell sx={{ maxWidth: 140 }}>
+                              <Typography noWrap sx={{ fontSize: '0.8rem', color: m.delegate ? 'text.primary' : 'text.disabled' }}>{m.delegate?.name || '—'}</Typography>
                             </TableCell>
                             <TableCell><MatchStatusBadge status={m.status} /></TableCell>
                             <TableCell align="right">
@@ -1445,7 +1499,62 @@ const AdminDashboard = () => {
     </SectionCard>
   );
 
-  const sectionComponents = [TournamentsSection, TeamsSection, PlayersSection, CoachesSection, StatsSection, CalendarSection, MatchesSection, ApplicationsSection, ArbitresSection];
+  const DelegatesSection = () => (
+    <SectionCard
+      title={`${delegates.length} délégué${delegates.length !== 1 ? 's' : ''} — saisie des faits de match dans l'app mobile`}
+      action={
+        <Button variant="contained" size="small" startIcon={<AddIcon />}
+          onClick={() => { setEditingDelegate(null); setDelegateForm(emptyDelegateForm); setDelegateDialog(true); }}>
+          Nouveau
+        </Button>
+      }
+    >
+      <TableContainer>
+        <Table>
+          <TableHead2 cols={[{ label: 'Délégué' }, { label: 'Email' }, { label: 'Téléphone' }, { label: 'Matchs à venir' }, { label: 'Statut' }, { label: 'Actions', align: 'right' }]} />
+          <TableBody>
+            {delegates.length === 0
+              ? <EmptyRow colSpan={6} message="Aucun délégué créé" />
+              : delegates.map(d => {
+                const upcoming = (d.delegatedMatches || []).filter(x => !['completed', 'cancelled'].includes(x.status));
+                return (
+                  <TableRow key={d.id} sx={{ '&:hover': { bgcolor: 'action.hover' }, '& td': { py: 1.5 } }}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#ecfeff', color: '#0e7490', fontSize: '0.75rem', fontWeight: 700 }}>{getInitials(d.name)}</Avatar>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>{d.name}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{d.email}</TableCell>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>{d.phone || '—'}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem' }}>
+                      {upcoming.length === 0 ? <Typography fontSize="0.8rem" color="text.disabled">—</Typography>
+                        : upcoming.map(x => (
+                          <Typography key={x.id} fontSize="0.8rem" noWrap>
+                            {x.homeTeam?.name || '?'} – {x.awayTeam?.name || '?'} · {x.date ? new Date(x.date).toLocaleDateString('fr-FR') : ''}
+                          </Typography>
+                        ))}
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={d.isActive ? 'Actif' : 'Inactif'} size="small"
+                        sx={{ fontSize: '0.72rem', height: 20, bgcolor: d.isActive ? '#f0fdf4' : '#fef2f2', color: d.isActive ? '#166534' : '#dc2626' }} />
+                    </TableCell>
+                    <TableCell>
+                      <RowActions
+                        onEdit={() => { setEditingDelegate(d); setDelegateForm({ name: d.name, email: d.email, password: '', phone: d.phone || '' }); setDelegateDialog(true); }}
+                        onDelete={() => openConfirm('Supprimer le délégué', `Supprimer "${d.name}" ? Ses matchs n'auront plus de délégué.`, () => handleDeleteDelegate(d))}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </SectionCard>
+  );
+
+  const sectionComponents = [TournamentsSection, TeamsSection, PlayersSection, CoachesSection, StatsSection, CalendarSection, MatchesSection, ApplicationsSection, ArbitresSection, DelegatesSection];
   const ActiveSection = sectionComponents[activeSection];
 
   // ── dialogs shared style ─────────────────────────────────────────────────────
@@ -1841,6 +1950,19 @@ const AdminDashboard = () => {
               {refereeSelect(matchForm.referee, v => setMatchForm(f => ({ ...f, referee: v })))}
             </Grid>
             <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Délégué (suivi en direct)</InputLabel>
+                <Select label="Délégué (suivi en direct)" value={matchForm.delegateId || ''}
+                  disabled={['in_progress', 'half_time'].includes(editingMatch?.status)}
+                  onChange={e => setMatchForm(f => ({ ...f, delegateId: e.target.value }))}>
+                  <MenuItem value=""><em>Aucun</em></MenuItem>
+                  {delegates.filter(d => d.isActive !== false).map(d => (
+                    <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
               <TextField fullWidth multiline rows={2} label="Notes" value={matchForm.notes} onChange={e => setMatchForm(f => ({ ...f, notes: e.target.value }))} />
             </Grid>
           </Grid>
@@ -2121,6 +2243,39 @@ const AdminDashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* ── Create / Edit Delegate Dialog ─────────────────────────────────── */}
+      <Dialog open={delegateDialog} onClose={() => { setDelegateDialog(false); setEditingDelegate(null); }} maxWidth="xs" fullWidth sx={dlgSx}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>
+          {editingDelegate ? 'Modifier le délégué' : 'Nouveau délégué'}
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400 }}>
+            Il se connecte à l'application mobile avec cet email et ce mot de passe.
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: '12px !important' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField label="Nom" fullWidth size="small" value={delegateForm.name}
+              onChange={e => setDelegateForm(f => ({ ...f, name: e.target.value }))} required />
+            {!editingDelegate && (
+              <TextField label="Email" fullWidth size="small" type="email" value={delegateForm.email}
+                onChange={e => setDelegateForm(f => ({ ...f, email: e.target.value }))} required />
+            )}
+            <TextField label={editingDelegate ? 'Nouveau mot de passe (optionnel)' : 'Mot de passe'} fullWidth size="small"
+              type="password" value={delegateForm.password} helperText="6 caractères minimum"
+              onChange={e => setDelegateForm(f => ({ ...f, password: e.target.value }))} required={!editingDelegate} />
+            <TextField label="Téléphone" fullWidth size="small" value={delegateForm.phone}
+              onChange={e => setDelegateForm(f => ({ ...f, phone: e.target.value }))} />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setDelegateDialog(false); setEditingDelegate(null); }}>Annuler</Button>
+          <Button variant="contained" onClick={handleSaveDelegate}
+            disabled={!delegateForm.name || (!editingDelegate && (!delegateForm.email || delegateForm.password.length < 6))}>
+            {editingDelegate ? 'Modifier' : 'Créer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
 
     </Box>
   );

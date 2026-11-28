@@ -38,6 +38,12 @@ const Match = sequelize.define('Match', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  // Délégué (rôle 'delegue') qui saisit les faits en direct dans l'app mobile.
+  delegateId: { type: DataTypes.INTEGER, allowNull: true },
+  // Chrono côté serveur : tous les écrans affichent la même minute.
+  firstHalfStartedAt:  { type: DataTypes.DATE, allowNull: true },
+  halfTimeStartedAt:   { type: DataTypes.DATE, allowNull: true },
+  secondHalfStartedAt: { type: DataTypes.DATE, allowNull: true },
   status: {
     type: DataTypes.ENUM('scheduled', 'in_progress', 'half_time', 'completed', 'cancelled', 'postponed'),
     defaultValue: 'scheduled'

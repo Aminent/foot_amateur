@@ -96,6 +96,7 @@ app.use('/api/coaches', coachRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/player-stats', playerStatsRoutes);
+app.use('/api/delegates', require('./routes/delegates'));
 app.use('/api/chat', chatRoutes);
 app.use('/api/rewards', rewardRoutes);
 app.use('/api/scouts', scoutRoutes);

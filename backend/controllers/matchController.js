@@ -12,6 +12,7 @@ const matchIncludes = [
   { model: Team, as: 'homeTeam', attributes: ['id', 'name'], include: [{ model: Player, as: 'players', attributes: ['id', 'name', 'jerseyNumber', 'position'], required: false }] },
   { model: Team, as: 'awayTeam', attributes: ['id', 'name'], include: [{ model: Player, as: 'players', attributes: ['id', 'name', 'jerseyNumber', 'position'], required: false }] },
   { model: Tournament, as: 'tournament', attributes: ['id', 'name', 'format'] },
+  { model: User, as: 'delegate', attributes: ['id', 'name'] },
   { model: MatchEvent, as: 'events', separate: true, order: [['minute', 'ASC'], ['extraMinute', 'ASC']] },
 ];
 
@@ -407,7 +408,57 @@ const deleteMatchEvent = async (req, res) => {
   }
 };
 
+// PUT /api/matches/:id/live  { action: kickoff | half_time | second_half | full_time, winnerTeamId? }
+// Drives the match clock; full_time closes the match through updateMatch (winner, bracket, stats).
+const LIVE_TRANSITIONS = {
+  kickoff:     { from: ['scheduled', 'postponed'], to: 'in_progress' },
+  half_time:   { from: ['in_progress'],            to: 'half_time' },
+  second_half: { from: ['half_time'],              to: 'in_progress' },
+  full_time:   { from: ['in_progress'],            to: 'completed' },
+};
 
+const liveAction = async (req, res) => {
+  try {
+    const match = await Match.findByPk(req.params.id);
+    if (!match) return res.status(404).json({ message: 'Match introuvable' });
+    const { action, winnerTeamId } = req.body;
+    const t = LIVE_TRANSITIONS[action];
+    if (!t) return res.status(400).json({ message: 'Action inconnue' });
+    if (!t.from.includes(match.status)) {
+      return res.status(400).json({ message: `Action impossible : le match est « ${match.status} »` });
+    }
+    if (!match.homeTeamId || !match.awayTeamId) {
+      return res.status(400).json({ message: 'Le match n\'a pas encore ses deux équipes' });
+    }
+    if (action === 'half_time' && match.secondHalfStartedAt) {
+      return res.status(400).json({ message: 'La mi-temps a déjà eu lieu' });
+    }
+    if (action === 'full_time' && !match.secondHalfStartedAt) {
+      return res.status(400).json({ message: 'Sifflez d\'abord la mi-temps et la reprise' });
+    }
+
+    if (action === 'full_time') {
+      req.body = { status: 'completed', ...(winnerTeamId ? { winnerTeamId } : {}) };
+      return updateMatch(req, res);
+    }
+
+    const now = new Date();
+    await match.update({
+      status: t.to,
+      ...(action === 'kickoff' && { firstHalfStartedAt: now, halfTimeStartedAt: null, secondHalfStartedAt: null, homeTeamScore: 0, awayTeamScore: 0 }),
+      ...(action === 'half_time' && { halfTimeStartedAt: now }),
+      ...(action === 'second_half' && { secondHalfStartedAt: now }),
+    });
+    await syncTournamentStatus(match.tournamentId);
+    const full = await Match.findByPk(match.id, { include: matchIncludes });
+    emit(match.tournamentId, 'match-updated', { matchId: match.id, tournamentId: match.tournamentId });
+    emitLive(match.id, 'status', { match: full });
+    res.json({ match: full });
+  } catch (error) {
+    console.error('liveAction error:', error);
+    res.status(500).json({ message: 'Erreur lors du changement de phase' });
+  }
+};
 
 // Legacy routes kept for compatibility
 const scheduleMatch = async (req, res) => {
@@ -445,6 +496,6 @@ const getPublicMatches = async (req, res) => {
 module.exports = {
   getMatches, getMatch, createMatch, updateMatch, deleteMatch,
   addMatchEvent, deleteMatchEvent,
-  scheduleMatch, submitScore,
+  scheduleMatch, submitScore, liveAction,
   getPublicMatches,
 };

@@ -17,6 +17,7 @@ import {
   Logout as LogoutIcon,
   AssignmentTurnedIn as ApplicationsIcon,
   RecordVoiceOver as RefereeIcon,
+  EditNote as DelegateIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   DarkModeOutlined as DarkModeIcon,
@@ -74,6 +75,7 @@ const NAV_ITEMS = [
   { id: 6, label: 'Matchs',        icon: <SportsSoccerIcon />  },
   { id: 7, label: 'Candidatures',  icon: <ApplicationsIcon /> },
   { id: 8, label: 'Arbitres',      icon: <RefereeIcon />      },
+  { id: 9, label: 'Délégués',      icon: <DelegateIcon />     },
 ];
 
 // ─── NavItem ─────────────────────────────────────────────────────────────────

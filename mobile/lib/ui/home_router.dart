@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/auth_controller.dart';
 import 'login_page.dart';
+import 'delegate_home_page.dart';
 import 'main_navigation_wrapper.dart';
 
 class HomeRouter extends StatelessWidget {
@@ -24,6 +25,9 @@ class HomeRouter extends StatelessWidget {
         }
 
         final role = auth.user!.role;
+        if (role == 'delegue') {
+          return DelegateHomePage(auth: auth);
+        }
         if (role == 'coach' || role == 'joueur') {
           return MainNavigationWrapper(auth: auth);
         }

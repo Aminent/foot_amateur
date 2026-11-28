@@ -105,6 +105,10 @@ ScoutEvaluation.belongsTo(Player, { foreignKey: 'playerId', as: 'player' });
 ScoutWatchlist.belongsTo(User, { foreignKey: 'scoutId', as: 'scout' });
 ScoutWatchlist.belongsTo(Player, { foreignKey: 'playerId', as: 'player' });
 
+// Délégué de match
+Match.belongsTo(User, { foreignKey: 'delegateId', as: 'delegate' });
+User.hasMany(Match,   { foreignKey: 'delegateId', as: 'delegatedMatches' });
+
 // RefereeMission associations
 Match.hasMany(RefereeMission, { as: 'refereeMissions', foreignKey: 'matchId' });
 RefereeMission.belongsTo(Match, { as: 'match', foreignKey: 'matchId' });
